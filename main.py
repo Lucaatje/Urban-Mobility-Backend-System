@@ -1,8 +1,9 @@
+from database.db import init_db
+
+
 def main():
-    print("hey there")
+    init_db()
 
 
-# Using the special variable 
-# __name__
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
