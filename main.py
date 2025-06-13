@@ -3,6 +3,7 @@ from services.user_service import login, register
 from utils.main_menu_ui import main_menu_ui
 from utils.login_page_ui import login_page_ui
 from models.models import User, UserRole
+from utils.Manage_travaller_ui import manage_traveller_accounts
 
 
 def main():
@@ -45,7 +46,13 @@ def main():
                 case '1':
                     manage_user_accounts(logged_in_user) # TO-DO (Melvern)
                 case '2':
-                    manage_traveller_accounts(logged_in_user) # TO-DO (Jimmy)
+                    if(logged_in_user.role == UserRole.SUPER_ADMIN or
+                       logged_in_user.role == UserRole.SYSTEM_ADMIN):
+                        manage_traveller_accounts(logged_in_user)
+                    else:
+                        print("You do not have permission to manage traveller accounts.")
+                        continue
+
                 case '3':
                     manage_scooter_information(logged_in_user) # TO-DO (Luca)
                 case '4':
