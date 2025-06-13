@@ -60,6 +60,17 @@ def validate_credentials(username, password):
     # Anders None
     return User(1, 'super_admin', 'Admin_123?', 'admin@gmail.com', UserRole.SUPER_ADMIN)
 
+def ZIP_code_checker(zip_code):
+    # Check if zip code had 4 digits and 2 letters
+    if not re.match(r'^\d{4}[A-Z]{2}$', zip_code):
+        return False, "Postcode moet bestaan uit 4 cijfers en 2 hoofdletters (bijv. 1234AB)."
+
+def Mobile_phone_checker(mobile_phone):
+    # Check if mobile phone starts has format +31600000000
+    if not re.match(r'^\+316\d{8}$', mobile_phone):
+        return False, "Mobiel telefoonnummer moet beginnen met +316 en gevolgd worden door 8 cijfers (bijv. +31612345678)."
     
-
-
+def Driving_license_number_checker(driving_license_number):
+    # check if driving license number has either format XX0000000 or X00000000
+    if not re.match(r'^[A-Z]{2}\d{7}$', driving_license_number) and not re.match(r'^[A-Z]\d{8}$', driving_license_number):
+        return False, "Rijbewijsnummer moet beginnen met 2 hoofdletters en gevolgd worden door 7 cijfers (bijv. AB1234567) of beginnen met 1 hoofdletter en gevolgd worden door 8 cijfers (bijv. A12345678)."
