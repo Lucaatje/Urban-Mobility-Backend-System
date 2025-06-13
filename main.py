@@ -1,33 +1,55 @@
 from database.db import init_db
 from services.user_service import login, register
+from utils.main_menu_ui import main_menu_ui
+from utils.login_page_ui import login_page_ui
+from models.models import User, UserRole
 
 
 def main():
-    while True:
-        print("\n--- Urban Mobility App ---")
-        print("1. Registreer")
-        print("2. Login")
-        print("3. Afsluiten")
+    # while True:
+    #     print("\n--- Urban Mobility App ---")
+    #     print("1. Registreer")
+    #     print("2. Login")
+    #     print("3. Afsluiten")
 
-        keuze = input("Maak een keuze (1-3): ")
+    #     keuze = input("Maak een keuze (1-3): ")
 
-        if keuze == "1":
-            username = input("Gebruikersnaam: ")
-            email = input("Email: ")
-            password = input("Wachtwoord: ")
-            role = input("Rol (Super Administrator / System Administrator / Service Engineer): ")
-            register(username, email, password, role)
+    #     if keuze == "1":
+    #         username = input("Gebruikersnaam: ")
+    #         email = input("Email: ")
+    #         password = input("Wachtwoord: ")
+    #         role = input("Rol (Super Administrator / System Administrator / Service Engineer): ")
+    #         register(username, email, password, role)
 
-        elif keuze == "2":
-            username = input("Gebruikersnaam: ")
-            password = input("Wachtwoord: ")
-            login(username, password)
+    #     elif keuze == "2":
+    #         username = input("Gebruikersnaam: ")
+    #         password = input("Wachtwoord: ")
+    #         login(username, password)
 
-        elif keuze == "3":
-            print("Programma afgesloten.")
+    #     elif keuze == "3":
+    #         print("Programma afgesloten.")
+    #         break
+    #     else:
+    #         print("Ongeldige keuze.")
+    while(True):
+        logged_in_user = login_page_ui('welcome, login with username and password.')
+        if not logged_in_user:
             break
-        else:
-            print("Ongeldige keuze.")
+
+        # MAIN_MENU NOT FINAL YET, DIFFERENT MENU FOR 3 DIFFERENT USER TYPES
+
+        while(True):
+            selected_option = main_menu_ui(logged_in_user)
+
+            match selected_option:
+                case '1':
+                    manage_user_accounts() # TO-DO
+                case '2':
+                    manage_traveller_accounts() # TO-DO
+                case '3':
+                    manage_scooter_information() # TO-DO
+                case '4':
+                    break # Logout and return to login page
 
 if __name__ == "__main__":
     main()
