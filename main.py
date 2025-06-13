@@ -43,11 +43,11 @@ def main():
 
             match selected_option:
                 case '1':
-                    manage_user_accounts() # TO-DO
+                    manage_user_accounts(logged_in_user) # TO-DO (Melvern)
                 case '2':
-                    manage_traveller_accounts() # TO-DO
+                    manage_traveller_accounts(logged_in_user) # TO-DO (Jimmy)
                 case '3':
-                    manage_scooter_information() # TO-DO
+                    manage_scooter_information(logged_in_user) # TO-DO (Luca)
                 case '4':
                     break # Logout and return to login page
 

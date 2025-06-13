@@ -1,5 +1,5 @@
-from database.db_login import validate_credentials
 from utils.commands_ui import clear_console
+from utils.input_validation import validate_credentials
 
 
 HIGHLIGHT = '\033[7m'  # Inverse (white-on-black or black-on-white)
@@ -30,13 +30,15 @@ def login_page_ui(prompt):
         choice = input("\nSelect an option: ").strip().lower()
 
         if choice == 'u':
-            input_username = input("Enter username (min 8 chars, max 10 chars): ")
-            if len(input_username) > 7 and len(input_username) < 11: username = input_username
-            else: prompt = f"{WARNING}Username: (min 8 chars, max 10 chars){RESET}"
+            username = input("Enter username (min 8 chars, max 10 chars): ")
+            # if len(input_username) > 7 and len(input_username) < 11: username = input_username
+            # else: prompt = f"{WARNING}Username: (min 8 chars, max 10 chars){RESET}"
+            # if username_checker(input_username): username = input_username
         elif choice == 'p':
-            input_password = input("Enter password (min 12 chars, max 30 chars): ")
-            if len(input_password) > 11 and len(input_password) < 31: password = input_password
-            else: prompt = f"{WARNING}Password: (min 12 chars, max 30 chars){RESET}"
+            password = input("Enter password (min 12 chars, max 30 chars): ")
+            # if len(input_password) > 11 and len(input_password) < 31: password = input_password
+            # else: prompt = f"{WARNING}Password: (min 12 chars, max 30 chars){RESET}"
+            # if password_checker(input_password): password = input_password
         elif choice == 't':
             show_password = not show_password
         elif choice == '1':
