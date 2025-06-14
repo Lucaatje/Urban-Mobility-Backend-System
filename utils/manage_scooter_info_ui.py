@@ -1,6 +1,8 @@
 from database.db import get_db_connection
 from utils.commands_ui import clear_console
 from models.models import Scooter
+from logs.logger import write_log
+from services.scooter_service import get_scooter_by_id
 from services.scooter_service import (
     add_scooter,
     update_scooter,
@@ -22,6 +24,58 @@ def manage_scooter_information(logged_in_user):
     if choice == "1":
         scooter_id = None
 
+        # Velden vragen voor toevoegen
+        brand = input("Brand: ")
+        model = input("Model: ")
+        serial_number = input("Serial Number (10–17 alphanumeric): ")
+        top_speed = input("Top Speed (km/h): ")
+        battery_capacity = input("Battery Capacity (Wh): ")
+        state_of_charge = input("Current SoC (%): ")
+
+        try:
+            soc_min = float(input("Target SoC Minimum (%): "))
+            soc_max = float(input("Target SoC Maximum (%): "))
+        except ValueError:
+            print("❌ Invalid input for SoC range.")
+            input("Press Enter to return...")
+            return
+
+        target_soc_range = (soc_min, soc_max)
+        latitude = input("Latitude: ")
+        longitude = input("Longitude: ")
+        out_of_service = input("Out of service? (yes/no): ").lower() in ['yes', 'ja', 'true']
+        mileage = input("Mileage (km): ")
+        last_maintenance_date = input("Last Maintenance Date (YYYY-MM-DD): ")
+
+        try:
+            scooter = Scooter(
+                scooter_id,
+                brand,
+                model,
+                serial_number,
+                top_speed,
+                battery_capacity,
+                state_of_charge,
+                target_soc_range,
+                latitude,
+                longitude,
+                out_of_service,
+                mileage,
+                last_maintenance_date
+            )
+        except Exception as e:
+            print(f"\n❌ Failed to create Scooter object: {e}")
+            input("Press Enter to return...")
+            return
+
+        if add_scooter(scooter, db):
+            print("\n✅ Scooter added.")
+        else:
+            print("\n❌ Failed to add scooter.")
+
+        input("\nPress Enter to return...")
+        return
+
     elif choice == "2":
         try:
             scooter_id = int(input("Enter the ID of the scooter you want to update: "))
@@ -29,6 +83,66 @@ def manage_scooter_information(logged_in_user):
             print("❌ Invalid ID format.")
             input("Press Enter to return...")
             return
+        
+        existing_scooter = get_scooter_by_id(scooter_id, db)
+        if not existing_scooter:
+            username = "unknown"
+            write_log(username, f"Attempted to update non-existent scooter", f"ID: {scooter_id}", suspicious=True)
+            print(f"❌ Scooter ID {scooter_id} bestaat niet.")
+            input("Press Enter to return...")
+            return
+        
+        # Scooter bestaat, pas nu pas input vragen voor update
+        brand = input("Brand: ")
+        model = input("Model: ")
+        serial_number = input("Serial Number (10–17 alphanumeric): ")
+        top_speed = input("Top Speed (km/h): ")
+        battery_capacity = input("Battery Capacity (Wh): ")
+        state_of_charge = input("Current SoC (%): ")
+
+        try:
+            soc_min = float(input("Target SoC Minimum (%): "))
+            soc_max = float(input("Target SoC Maximum (%): "))
+        except ValueError:
+            print("❌ Invalid input for SoC range.")
+            input("Press Enter to return...")
+            return
+
+        target_soc_range = (soc_min, soc_max)
+        latitude = input("Latitude: ")
+        longitude = input("Longitude: ")
+        out_of_service = input("Out of service? (yes/no): ").lower() in ['yes', 'ja', 'true']
+        mileage = input("Mileage (km): ")
+        last_maintenance_date = input("Last Maintenance Date (YYYY-MM-DD): ")
+
+        try:
+            scooter = Scooter(
+                scooter_id,
+                brand,
+                model,
+                serial_number,
+                top_speed,
+                battery_capacity,
+                state_of_charge,
+                target_soc_range,
+                latitude,
+                longitude,
+                out_of_service,
+                mileage,
+                last_maintenance_date
+            )
+        except Exception as e:
+            print(f"\n❌ Failed to create Scooter object: {e}")
+            input("Press Enter to return...")
+            return
+
+        if update_scooter(scooter_id, scooter, db):
+            print("\n✅ Scooter updated.")
+        else:
+            print("\n❌ Failed to update scooter.")
+
+        input("\nPress Enter to return...")
+        return
 
     elif choice == "3":
         try:
@@ -73,59 +187,4 @@ def manage_scooter_information(logged_in_user):
         input("Press Enter to return...")
         return
 
-    # For add and update
-    brand = input("Brand: ")
-    model = input("Model: ")
-    serial_number = input("Serial Number (10–17 alphanumeric): ")
-    top_speed = input("Top Speed (km/h): ")
-    battery_capacity = input("Battery Capacity (Wh): ")
-    state_of_charge = input("Current SoC (%): ")
-
-    try:
-        soc_min = float(input("Target SoC Minimum (%): "))
-        soc_max = float(input("Target SoC Maximum (%): "))
-    except ValueError:
-        print("❌ Invalid input for SoC range.")
-        input("Press Enter to return...")
-        return
-
-    target_soc_range = (soc_min, soc_max)
-    latitude = input("Latitude: ")
-    longitude = input("Longitude: ")
-    out_of_service = input("Out of service? (yes/no): ").lower() in ['yes', 'ja', 'true']
-    mileage = input("Mileage (km): ")
-    last_maintenance_date = input("Last Maintenance Date (YYYY-MM-DD): ")
-
-    try:
-        scooter = Scooter(
-            scooter_id,
-            brand,
-            model,
-            serial_number,
-            top_speed,
-            battery_capacity,
-            state_of_charge,
-            target_soc_range,
-            latitude,
-            longitude,
-            out_of_service,
-            mileage,
-            last_maintenance_date
-        )
-    except Exception as e:
-        print(f"\n❌ Failed to create Scooter object: {e}")
-        input("Press Enter to return...")
-        return
-
-    if scooter_id is None:
-        if add_scooter(scooter, db):
-            print("\n✅ Scooter added.")
-        else:
-            print("\n❌ Failed to add scooter.")
-    else:
-        if update_scooter(scooter_id, scooter, db):
-            print("\n✅ Scooter updated.")
-        else:
-            print("\n❌ Failed to update scooter.")
-
-    input("\nPress Enter to return...")
+   

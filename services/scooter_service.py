@@ -1,8 +1,9 @@
 from models.models import Scooter
+from logs.logger import write_log
 
 
 
-def add_scooter(scooter: Scooter, db_connection):
+def add_scooter(scooter: Scooter, db_connection, username="unknown"):
     
     conn = db_connection
     cursor = conn.cursor()
@@ -35,27 +36,29 @@ def add_scooter(scooter: Scooter, db_connection):
             scooter.last_maintenance_date
         ))
         db_connection.commit()
+        write_log(username, "Added new scooter", f"Serial: {scooter.serial_number}", suspicious=False)
         return True
 
     except Exception as e:
+        write_log(username, "Failed to add scooter", str(e), suspicious=True)
         print(f"Databasefout bij toevoegen scooter: {e}")
         return False
 
 
 
-def update_scooter(scooter_id, updated_scooter, db_connection):
+def update_scooter(scooter_id, updated_scooter, db_connection, username="unknown"):
     
     conn = db_connection
     cursor = conn.cursor()
 
-    existing_scooter = get_scooter_by_id(scooter_id, db_connection)
-    if not existing_scooter:
-        print(f"Scooter met ID {scooter_id} bestaat niet.")
+    scooter = get_scooter_by_id(scooter_id)
+    if not scooter:
         return False
     
 
     validation_error = validate_scooter_data(updated_scooter)
     if validation_error:
+        write_log(username, "Failed to update scooter due to validation error", f"ID: {scooter_id}, Error: {validation_error}", suspicious=True)
         print(f"Validatiefout: {validation_error}")
         return False
 
@@ -94,30 +97,34 @@ def update_scooter(scooter_id, updated_scooter, db_connection):
         ))
 
         db_connection.commit()
+        write_log(username, "Updated scooter", f"ID: {scooter_id}", suspicious=False)
         return True
 
     except Exception as e:
+        write_log(username, "Failed to update scooter due to database error", f"ID: {scooter_id}, Error: {e}", suspicious=True)
         print(f"❌ Databasefout bij updaten scooter: {e}")
         db_connection.rollback()
         return False
 
 
 
-
-def delete_scooter(scooter_id, db_connection):
+def delete_scooter(scooter_id, db_connection, username="unknown"):
     conn = db_connection
     cursor = conn.cursor()
     
     scooter = get_scooter_by_id(scooter_id, db_connection)
     if not scooter:
+        write_log(username, f"Attempted to delete non-existent scooter", f"ID: {scooter_id}", suspicious=True)
         return False
 
     try:
         cursor.execute("DELETE FROM scooters WHERE id = ?", (scooter_id,))
         conn.commit()
+        write_log(username, "Deleted scooter", f"ID: {scooter_id}", suspicious=False)
         return True
     
     except Exception as e:
+        write_log(username, "Failed to delete scooter", f"ID: {scooter_id} Error: {e}", suspicious=True)
         print(f"Fout bij verwijderen van scooter: {e}")
         return False
 
@@ -143,25 +150,28 @@ def search_scooters(keyword, db_connection):
         return resultaten
 
     except Exception as e:
-        print(f"❌ Fout bij zoeken naar scooters: {e}")
+        print(f"Fout bij zoeken naar scooters: {e}")
         return []
 
 
 
-def list_all_scooters(db_connection):
+def list_all_scooters(db_connection, username="unknown"):
     cursor = db_connection.cursor()
     try:
         cursor.execute("SELECT * FROM scooters")
         scooters = cursor.fetchall()
 
+        write_log(username, "Listed all scooters", "", suspicious=False)
+
         if not scooters:
-            print("⚠️  Er zijn geen scooters gevonden.")
             return
 
         return scooters
     
     except Exception as e:
-        print(f"❌ Fout bij ophalen van scooters: {e}")
+        write_log(username, "Failed to list scooters", str(e), suspicious=True)
+        print(f"Fout bij ophalen van scooters: {e}")
+        return []
 
 
 
@@ -173,11 +183,9 @@ def get_scooter_by_id(scooter_id, db_connection) -> Scooter:
     scooter = cursor.fetchone()
 
     if not scooter:
-        print(f"Scooter met ID {scooter_id} bestaat niet.")
         return False
 
     return scooter
-
 
 
 
