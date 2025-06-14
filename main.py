@@ -3,6 +3,7 @@ from services.user_service import login, register
 from utils.main_menu_ui import main_menu_ui
 from utils.login_page_ui import login_page_ui
 from models.models import User, UserRole
+from utils.manage_scooter_info_ui import manage_scooter_information
 
 
 def main():
