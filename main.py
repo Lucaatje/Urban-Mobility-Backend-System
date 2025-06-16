@@ -4,10 +4,11 @@ from utils.main_menu_ui import main_menu_ui
 from utils.login_page_ui import login_page_ui
 from models.models import User, UserRole
 from utils.manage_scooter_info_ui import manage_scooter_information
+from utils.Manage_travaller_ui import manage_traveller_accounts
 
 
 def main():
-    init_db()  # Initialize the database
+    # init_db()  # Initialize the database
     # while True:
     #     print("\n--- Urban Mobility App ---")
     #     print("1. Registreer")
@@ -34,7 +35,7 @@ def main():
     #     else:
     #         print("Ongeldige keuze.")
     while (True):
-        logged_in_user = login_page_ui(
+        logged_in_user, message = login_page_ui(
             'welcome, login with username and password.')
         if not logged_in_user:
             print(message)
@@ -43,7 +44,7 @@ def main():
         # MAIN_MENU NOT FINAL YET, DIFFERENT MENU FOR 3 DIFFERENT USER TYPES
 
         while (True):
-            selected_option = main_menu_ui(logged_in_user)
+            selected_option = main_menu_ui(logged_in_user, message)
 
             match selected_option:
                 case '1':
