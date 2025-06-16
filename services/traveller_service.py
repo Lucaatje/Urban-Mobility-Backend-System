@@ -74,3 +74,14 @@ def UpdateTraveller(traveller: Traveller) -> bool:
         return False
     finally:
         conn.close()
+
+
+def GetAllTravellersId() -> list[int]:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM travellers")
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [row[0] for row in rows] if rows else []

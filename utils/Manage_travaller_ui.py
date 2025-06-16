@@ -22,6 +22,10 @@ def manage_traveller_accounts(logged_in_user):
             RegisterTraveller(traveller)
 
         elif choice == '2':
+            print("Available Travellers:")
+            for id in GetAllTravellersId():
+                # Assuming GetAllTravellersId() returns a list of traveller IDs
+                print(f"Traveller ID: {id}")
             traveller_id = input("Enter traveller ID to view: ")
             traveller = GetTravellerById(int(traveller_id))
             if traveller:
@@ -37,6 +41,10 @@ def manage_traveller_accounts(logged_in_user):
                     f"Driving License Number: {traveller.driving_license_number}")
 
         elif choice == '3':
+            print("Available Travellers:")
+            for id in GetAllTravellersId():
+                # Assuming GetAllTravellersId() returns a list of traveller IDs
+                print(f"Traveller ID: {id}")
             traveller_id = input("Enter traveller ID to delete: ")
             if DeleteTravellerById(int(traveller_id)):
                 print(f"Traveller with ID {traveller_id} has been deleted.")
@@ -44,6 +52,10 @@ def manage_traveller_accounts(logged_in_user):
                 print(f"Traveller with ID {traveller_id} not found.")
 
         elif choice == '4':
+            print("Available Travellers:")
+            for id in GetAllTravellersId():
+                # Assuming GetAllTravellersId() returns a list of traveller IDs
+                print(f"Traveller ID: {id}")
             traveller_id = input("Enter traveller ID to update: ")
             traveller = GetTravellerById(int(traveller_id))
             if (traveller is None):
@@ -106,8 +118,7 @@ def Create_traveller(existing_traveller=None):
         elif match == '3':
             birthday = Date_verification()
         elif match == '4':
-            Gender = input(
-                "Enter your gender 'male' or 'female': ").strip().lower()
+            Gender = Gender_verification()
         elif match == '5':
             street_name = input("Enter street name: ")
         elif match == '6':
@@ -218,3 +229,11 @@ def Date_verification():
     except ValueError:
         print("Invalid date format. Please use DD/MM/YYYY.")
         return Date_verification()
+
+
+def Gender_verification():
+    while True:
+        gender = input("Enter gender (M/F): ").strip().upper()
+        if gender in ['M', 'F']:
+            return 'male' if gender == 'M' else 'female'
+        print("Invalid gender. Please enter M for male or F for female.")
