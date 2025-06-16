@@ -37,7 +37,8 @@ def init_db():
         city TEXT,
         email_address TEXT UNIQUE,
         mobile_phone TEXT,
-        driving_license_number TEXT UNIQUE
+        driving_license_number TEXT UNIQUE,
+        REGISTRATION_DATE TEXT DEFAULT (datetime('now','localtime'))
     )
     """)
 

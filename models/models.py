@@ -1,12 +1,14 @@
 from enum import Enum
 
+
 class Traveller:
     def __init__(self, traveller_id, first_name, last_name, birthday, gender, street_name, house_number,
-                 zip_code, city, email_address, mobile_phone, driving_license_number):
-        self.traveller_id = traveller_id  # uniek ID
+                 zip_code, city, email_address, mobile_phone, driving_license_number, registration_date=None):
+        self.id = traveller_id  # uniek ID
         self.first_name = first_name.strip().title()
         self.last_name = last_name.strip().title()
-        self.birthday = birthday  # verwacht als YYYY-MM-DD (string of datetime.date)
+        # verwacht als YYYY-MM-DD (string of datetime.date)
+        self.birthday = birthday
         self.gender = gender.lower()  # 'male' of 'female'
 
         self.street_name = street_name.strip().title()
@@ -16,12 +18,13 @@ class Traveller:
 
         self.email_address = email_address.lower()
         self.mobile_phone = mobile_phone  # Alleen DDDDDDDD invoeren, +31-6-DDDDDDDD tonen
-        self.driving_license_number = driving_license_number.upper()  # Validatie: XXDDDDDDD of XDDDDDDDD
+        # Validatie: XXDDDDDDD of XDDDDDDDD
+        self.driving_license_number = driving_license_number.upper()
+        # Wordt automatisch ingesteld bij registratie
+        self.registration_date = registration_date
 
     def __repr__(self):
         return f"<Traveller {self.first_name} {self.last_name}>"
-
-
 
 
 class Scooter:
@@ -37,25 +40,26 @@ class Scooter:
         self.battery_capacity = int(battery_capacity)  # in Wh
         self.state_of_charge = float(state_of_charge)  # in %, 0–100
 
-        self.target_soc_range = target_soc_range  # tuple: (min%, max%), e.g., (20.0, 80.0)
+        # tuple: (min%, max%), e.g., (20.0, 80.0)
+        self.target_soc_range = target_soc_range
 
         self.location_lat = round(float(location_lat), 5)
         self.location_long = round(float(location_long), 5)
 
-        self.out_of_service = bool(out_of_service)  # True if in maintenance or low battery
+        # True if in maintenance or low battery
+        self.out_of_service = bool(out_of_service)
         self.mileage = float(mileage)  # in km
-        self.last_maintenance_date = last_maintenance_date  # string of ISO 8601: YYYY-MM-DD
+        # string of ISO 8601: YYYY-MM-DD
+        self.last_maintenance_date = last_maintenance_date
 
     def __repr__(self):
         return f"<Scooter {self.brand} {self.model}, Serial: {self.serial_number}>"
-
 
 
 class UserRole(Enum):
     SUPER_ADMIN = "Super Administrator"
     SYSTEM_ADMIN = "System Administrator"
     SERVICE_ENGINEER = "Service Engineer"
-
 
 
 class User:
