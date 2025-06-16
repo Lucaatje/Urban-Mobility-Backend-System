@@ -1,4 +1,5 @@
 import sqlite3
+from models.models import UserRole
 
 DB_PATH = "urban_mobility.db"
 
@@ -59,6 +60,16 @@ def init_db():
         last_maintenance TEXT
     )
     """)
+
+    username = 'super_admin'
+    email = 'admin@gmail.com'
+    password = 'Admin_123?'
+    role = UserRole.SUPER_ADMIN
+
+    cursor.execute("""
+        INSERT INTO users (username, email, password, role)
+        VALUES (?, ?, ?, ?)
+        """, (username, email, password, role.value))
 
     conn.commit()
     conn.close()

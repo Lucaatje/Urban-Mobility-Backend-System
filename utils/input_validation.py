@@ -1,6 +1,5 @@
-from database.db import get_db_connection
 import re
-from models.models import User, UserRole
+from database.db import get_db_connection
 
 
 def is_username_unique(username):
@@ -54,13 +53,6 @@ def password_checker(password):
         return False, "Wachtwoord moet minimaal één speciaal teken bevatten."
 
     return True, "Wachtwoord is geldig."
-
-
-def validate_credentials(username, password):
-    # Verander dit zodat dit de username en password valideerd en bij success een class user terug stuurd vanuit database.
-    # Voorbeeld: return User(1, 'super_admin', 'Admin_123?', 'admin@gmail.com', UserRole.SUPER_ADMIN)
-    # Anders None
-    return User(1, 'super_admin', 'Admin_123?', 'admin@gmail.com', UserRole.SUPER_ADMIN)
 
 
 def ZIP_code_checker(zip_code):

@@ -1,5 +1,5 @@
 from database.db import init_db
-from services.user_service import login, register
+from utils.user_page_ui import manage_user_accounts
 from utils.main_menu_ui import main_menu_ui
 from utils.login_page_ui import login_page_ui
 from models.models import User, UserRole
@@ -37,6 +37,7 @@ def main():
         logged_in_user = login_page_ui(
             'welcome, login with username and password.')
         if not logged_in_user:
+            print(message)
             break
 
         # MAIN_MENU NOT FINAL YET, DIFFERENT MENU FOR 3 DIFFERENT USER TYPES
