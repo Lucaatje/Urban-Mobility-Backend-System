@@ -1,0 +1,5 @@
+No.  | Date       | Time     | Username   | Description                        | Additional Info                  | Suspicious
+-----|------------|----------|------------|------------------------------------|----------------------------------|-----------
+1    | 14-06-2025 | 14:57:11 | unknown    | Attempted to delete non-existent scooter | ID: 11                           | Yes
+2    | 14-06-2025 | 15:03:06 | unknown    | Attempted to update non-existent scooter | ID: 11                           | Yes
+3    | 14-06-2025 | 15:04:16 | unknown    | Attempted to update non-existent scooter | ID: 11                           | Yes

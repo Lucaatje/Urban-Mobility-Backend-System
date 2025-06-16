@@ -3,7 +3,7 @@ from utils.user_page_ui import manage_user_accounts
 from utils.main_menu_ui import main_menu_ui
 from utils.login_page_ui import login_page_ui
 from models.models import User, UserRole
-from utils.Manage_travaller_ui import manage_traveller_accounts
+from utils.manage_scooter_info_ui import manage_scooter_information
 
 
 def main():
