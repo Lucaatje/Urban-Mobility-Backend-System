@@ -1,5 +1,5 @@
 from database.db import init_db
-from services.user_service import login, register
+from utils.user_page_ui import manage_user_accounts
 from utils.main_menu_ui import main_menu_ui
 from utils.login_page_ui import login_page_ui
 from models.models import User, UserRole
@@ -32,14 +32,15 @@ def main():
     #     else:
     #         print("Ongeldige keuze.")
     while(True):
-        logged_in_user = login_page_ui('welcome, login with username and password.')
+        logged_in_user, message = login_page_ui('welcome, login with username and password.')
         if not logged_in_user:
+            print(message)
             break
 
         # MAIN_MENU NOT FINAL YET, DIFFERENT MENU FOR 3 DIFFERENT USER TYPES
 
         while(True):
-            selected_option = main_menu_ui(logged_in_user)
+            selected_option = main_menu_ui(logged_in_user, message)
 
             match selected_option:
                 case '1':
@@ -52,4 +53,5 @@ def main():
                     break # Logout and return to login page
 
 if __name__ == "__main__":
+    # init_db() # ONLY INITIATE WHEN DATABASE NEEDS TO BE RECREATED
     main()
