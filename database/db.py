@@ -1,5 +1,6 @@
 import sqlite3
 from models.models import UserRole
+import os
 
 DB_PATH = "urban_mobility.db"
 
@@ -11,6 +12,9 @@ def get_db_connection():
 
 
 def init_db():
+    if os.path.exists(DB_PATH):
+        return
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -58,6 +62,15 @@ def init_db():
         out_of_service INTEGER CHECK(out_of_service IN (0, 1)),
         mileage INTEGER,
         last_maintenance TEXT
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS temp_passwords (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        expire_date DATETIME
     )
     """)
 

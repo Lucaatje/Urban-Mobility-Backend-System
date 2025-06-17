@@ -8,7 +8,7 @@ from utils.Manage_travaller_ui import manage_traveller_accounts
 
 
 def main():
-    # init_db()  # Initialize the database
+    init_db()  # Initialize the database, you can keep this on for now since it also checks if it already exists.
     # while True:
     #     print("\n--- Urban Mobility App ---")
     #     print("1. Registreer")
@@ -48,7 +48,9 @@ def main():
 
             match selected_option:
                 case '1':
-                    manage_user_accounts(logged_in_user)  # TO-DO (Melvern)
+                    if logged_in_user.role != UserRole.SERVICE_ENGINEER:
+                        response = manage_user_accounts(logged_in_user)  # TO-DO (Melvern)
+                        if response == "REDIRECT_LOGIN": break
                 case '2':
                     if (logged_in_user.role == UserRole.SUPER_ADMIN or
                        logged_in_user.role == UserRole.SYSTEM_ADMIN):

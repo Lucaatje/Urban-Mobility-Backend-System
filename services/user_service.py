@@ -2,6 +2,7 @@ from database.db import get_db_connection
 from utils.input_validation import username_checker, password_checker
 from models.models import User, UserRole
 from utils.commands_ui import clear_console
+from datetime import datetime, timedelta
 
 
 HIGHLIGHT = '\033[7m'  # Inverse (white-on-black or black-on-white)
@@ -43,6 +44,10 @@ def register(username, email, password, role):
     valid, message = password_checker(password)
     if not valid:
         return valid, message
+    
+    # valid, message = email_checker(email)
+    # if not valid:
+    #     return valid, message
 
     try:
         cursor.execute("""
@@ -73,15 +78,24 @@ def update(user_id, username, email, password, role, selected_user):
         valid, message = password_checker(password)
         if not valid:
             return valid, message
-    else:
-        password = selected_user.password_hash
+        valid, message = temp_password_add(username, password, datetime.now() + timedelta(hours=1))
+        if not valid:
+            return valid, message
+
+    if email == '': email = selected_user.email 
+    # if email != '':
+    #     valid, message = email_checker(email)
+    #     if not valid:
+    #         return valid, message
+    # else:
+    #     email = selected_user.email
     
     try:
         cursor.execute("""
             UPDATE users
-            SET username = ?, email = ?, password = ?, role = ?
+            SET username = ?, email = ?, role = ?
             WHERE id = ?
-        """, (username, email, password, role.value, user_id))
+        """, (username, email, role.value, user_id))
         conn.commit()
         return True, f"Gebruiker '{username}' succesvol geupdate."
     except Exception as e:
@@ -109,6 +123,11 @@ def delete(selected_user):
             DELETE FROM users
             WHERE id = ?
         """, (selected_user.user_id,))
+
+        cursor.execute("""
+            DELETE FROM temp_passwords
+            WHERE username = ?
+        """, (selected_user.username,))
         conn.commit()
         return True, f"{SUCCES}Gebruiker '{selected_user.username}' succesvol verwijderd.{RESET}"
     except Exception as e:
@@ -138,3 +157,81 @@ def retrieve_users(page_number):
     conn.close()
     return users, user_count
 
+def temp_password_add(username, password, expire_date):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("""
+            SELECT id FROM temp_passwords WHERE username = ? AND password = ?
+        """, (username, password))
+        temp_password = cursor.fetchone()
+
+        if temp_password:
+            cursor.execute("""
+                UPDATE temp_passwords 
+                SET password = ?, expire_date = ?
+                WHERE id = ?
+            """, (password, expire_date, temp_password[0]))
+        else:
+            cursor.execute("""
+                INSERT INTO temp_passwords (username, password, expire_date)
+                VALUES (?, ?, ?)
+            """, (username, password, expire_date))
+        conn.commit()
+        return True, f"{SUCCES}Tijdelijk wachtwoord succesvol opgeslagen.{RESET}"
+    except Exception as e:
+        return False, f"{WARNING}Updatefout: {e}{RESET}"
+    finally:
+        conn.close()
+
+def change_password(username, password):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT username, password, expire_date FROM temp_passwords WHERE username = ?
+        """, (username,))
+
+        temp_password = cursor.fetchone()
+
+        if temp_password:
+            if datetime.strptime(temp_password[2], "%Y-%m-%d %H:%M:%S.%f") < datetime.now() or temp_password[1] != password:
+                return False, f"{WARNING}Gebruikersnaam en of wachtwoord verkeerd.{RESET}"
+            else:
+                return True, None
+        else:
+            return False, None
+    except Exception as e:
+        return False, f"{WARNING}Zoekfout: {e}{RESET}"
+    finally:
+        conn.close()
+
+def update_password(username, password):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if len(password) == 0: return False, "Enter password."
+
+    valid, message = password_checker(password)
+    if not valid:
+        return valid, message
+
+    try:
+        cursor.execute("""
+            UPDATE users
+            SET password = ?
+            WHERE username = ?
+        """, (password, username))
+
+        cursor.execute("""
+            DELETE FROM temp_passwords
+            WHERE username = ?
+        """, (username,))
+        conn.commit()
+        return True, f"{SUCCES}Wachtwoord voor '{username}' succesvol geupdate.{RESET}"
+    except Exception as e:
+        return False, f"{WARNING}Updatefout: {e}{RESET}"
+    finally:
+        conn.close()

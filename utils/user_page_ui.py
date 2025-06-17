@@ -61,6 +61,7 @@ def manage_user_accounts(logged_in_user):
             choice_int = int(choice)
             selected_user = logged_in_user if choice_int == logged_in_user.user_id else next(user for user in current_user_list if user.user_id == choice_int)
             response = user_details_page_ui(selected_user, logged_in_user)
+            if response == "REDIRECT_LOGIN": return response
             current_user_list, user_count = retrieve_users(page_number)
         elif choice == '+':
             if len(current_user_list) > 9:
@@ -77,7 +78,7 @@ def manage_user_accounts(logged_in_user):
             response = message
             current_user_list, user_count = retrieve_users(page_number)
         elif choice == 'b':
-            return
+            return ''
         else: response = f"{WARNING}Invalid option. Please try again.{RESET}"
 
     # Validate user input on existing id on current visible users:
@@ -201,11 +202,13 @@ def user_details_page_ui(selected_user, logged_in_user):
         elif choice == 't': show_password = not show_password
         elif choice == '1':
             valid, message = update(selected_user.user_id, username, email, password, role, selected_user)
-            if valid: prompt = f"{SUCCES}{message}{RESET}"
+            if valid and role == logged_in_user.role: return f"{SUCCES}{message}{RESET}"
+            elif valid: prompt = f"{SUCCES}{message}{RESET}"
             else: prompt = f"{WARNING}{message}{RESET}"
         elif choice == '2':
             valid, message = delete(selected_user)
-            if valid: return message
+            if valid and selected_user.user_id == logged_in_user.user_id: return "REDIRECT_LOGIN"
+            elif valid: return message
             else: prompt = message
         elif choice == '3': return ''
         else: prompt = f"{WARNING}Invalid option. Please try again.{RESET}"
