@@ -5,6 +5,13 @@ from utils.login_page_ui import login_page_ui
 from models.models import User, UserRole
 from utils.manage_scooter_info_ui import manage_scooter_information
 from utils.Manage_travaller_ui import manage_traveller_accounts
+from database.Backup import *
+HIGHLIGHT = '\033[7m'  # Inverse (white-on-black or black-on-white)
+COMMENT = '\033[90m' # Grey
+SUCCES = '\033[32m' # Green
+BUTTON = '\033[34m'  # Blue
+WARNING = '\033[31m' # Red
+RESET = '\033[0m' # Return to normal (Always use this after coloring data)
 
 
 def main():
@@ -64,6 +71,17 @@ def main():
                     manage_scooter_information(logged_in_user)  # TO-DO (Luca)
                 case '4':
                     break  # Logout and return to login page
+                case '5':
+                    if (logged_in_user.role == UserRole.SUPER_ADMIN or
+                       logged_in_user.role == UserRole.SYSTEM_ADMIN):
+                        UI_backup_database()
+                    else:
+                        print(
+                            "You do not have permission to manage the database.")
+
+
+
+                    
 
 
 if __name__ == "__main__":

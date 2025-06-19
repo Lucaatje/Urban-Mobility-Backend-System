@@ -1,21 +1,33 @@
 import sqlite3
-from models.models import UserRole
+import json
 import os
+from models.models import UserRole
 
-DB_PATH = "urban_mobility.db"
+CONFIG_PATH = "database/config.json"
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
+    # Load the database path from config.json
+    with open(CONFIG_PATH, "r") as config_file:
+        config = json.load(config_file)
+        db_path = config.get("db_path", "database/urban_mobility.db")
+
+    conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
 
 def init_db():
-    if os.path.exists(DB_PATH):
+    # Load the database path from config.json
+    with open(CONFIG_PATH, "r") as config_file:
+        config = json.load(config_file)
+        db_path = config.get("db_path", "database/urban_mobility.db")
+
+    # Check if the database file exists
+    if os.path.exists(db_path):
         return
 
-    conn = get_db_connection()
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     cursor.execute("""
