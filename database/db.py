@@ -1,4 +1,4 @@
-import sqlite3
+import sqlite3, bcrypt
 from models.models import UserRole
 import os
 
@@ -79,10 +79,13 @@ def init_db():
     password = 'Admin_123?'
     role = UserRole.SUPER_ADMIN
 
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
     cursor.execute("""
         INSERT INTO users (username, email, password, role)
         VALUES (?, ?, ?, ?)
-        """, (username, email, password, role.value))
+        """, (username, email, hashed_password, role.value))
 
     conn.commit()
     conn.close()

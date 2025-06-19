@@ -3,6 +3,8 @@ from utils.input_validation import username_checker, password_checker
 from models.models import User, UserRole
 from utils.commands_ui import clear_console
 from datetime import datetime, timedelta
+from utils.password_utils import hash_password
+import bcrypt
 
 
 HIGHLIGHT = '\033[7m'  # Inverse (white-on-black or black-on-white)
@@ -16,20 +18,24 @@ def login(username, password):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    if len(username) == 0 and len(password) == 0: return False, "Enter username and password."
-    if len(username) == 0: return False, "Enter username."
-    if len(password) == 0: return False, "Enter password."
+    if len(username) == 0 and len(password) == 0: 
+        return False, "Enter username and password."
+    if len(username) == 0: 
+        return False, "Enter username."
+    if len(password) == 0: 
+        return False, "Enter password."
 
-    # CREATE HASH-FUNCTION: Hash password before comparing password with the password inside database.
-    
-    cursor.execute("SELECT id, username, email, password, role FROM users WHERE username = ? AND password = ?", (username, password))
+    cursor.execute("SELECT id, username, email, password, role FROM users WHERE username = ?", (username,))
     user = cursor.fetchone()
     conn.close()
 
     if user:
-        return User(user[0], user[1], user[3], user[2], UserRole(user[4])), f"Gebruiker '{username}' succesvol ingelogd."
-    else:
-        return False, "Gebruikersnaam en of wachtwoord verkeerd."
+        user_id, user_name, user_email, hashed_password, user_role = user
+        if bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8')):
+            return User(user_id, user_name, hashed_password, user_email, UserRole(user_role)), f"Gebruiker '{username}' succesvol ingelogd."
+        else:
+            return False, "Gebruikersnaam en of wachtwoord verkeerd."
+
 
 
 
@@ -49,11 +55,13 @@ def register(username, email, password, role):
     # if not valid:
     #     return valid, message
 
+    hashed_password = hash_password(password)
+
     try:
         cursor.execute("""
         INSERT INTO users (username, email, password, role)
         VALUES (?, ?, ?, ?)
-        """, (username, email, password, role.value))
+        """, (username, email, hashed_password, role.value))
         conn.commit()
         return valid, f"Gebruiker '{username}' succesvol geregistreerd."
     except Exception as e:

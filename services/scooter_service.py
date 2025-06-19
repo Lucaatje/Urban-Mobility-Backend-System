@@ -1,4 +1,4 @@
-from models.models import Scooter
+from models.models import Scooter, UserRole
 from logs.logger import write_log
 
 
@@ -46,24 +46,19 @@ def add_scooter(scooter: Scooter, db_connection, username="unknown"):
 
 
 
-def update_scooter(scooter_id, updated_scooter, db_connection, username="unknown"):
-    
-    conn = db_connection
-    cursor = conn.cursor()
-
-    scooter = get_scooter_by_id(scooter_id)
-    if not scooter:
-        return False
-    
-
-    validation_error = validate_scooter_data(updated_scooter)
-    if validation_error:
-        write_log(username, "Failed to update scooter due to validation error", f"ID: {scooter_id}, Error: {validation_error}", suspicious=True)
-        print(f"Validatiefout: {validation_error}")
-        return False
+def update_scooter(scooter_id, updated_scooter: Scooter, db, username=None, updated_field=None):
 
     try:
-        cursor.execute("""
+        validate_scooter_data(updated_scooter)
+    except Exception as e:
+        print(f"❌ Validatiefout voor veld '{updated_field}': {e}")
+        return False
+    
+    conn = db
+    cursor = conn.cursor()
+
+    try:
+        query = """
             UPDATE scooters SET
                 brand = ?,
                 model = ?,
@@ -79,7 +74,8 @@ def update_scooter(scooter_id, updated_scooter, db_connection, username="unknown
                 mileage = ?,
                 last_maintenance = ?
             WHERE id = ?
-        """, (
+        """
+        cursor.execute(query, (
             updated_scooter.brand,
             updated_scooter.model,
             updated_scooter.serial_number,
@@ -95,16 +91,16 @@ def update_scooter(scooter_id, updated_scooter, db_connection, username="unknown
             updated_scooter.last_maintenance_date,
             scooter_id
         ))
+        db.commit()
 
-        db_connection.commit()
-        write_log(username, "Updated scooter", f"ID: {scooter_id}", suspicious=False)
+        from logs.logger import write_log
+        write_log(username, f"Updated scooter field '{updated_field}'", f"Scooter ID: {scooter_id}")
         return True
 
     except Exception as e:
-        write_log(username, "Failed to update scooter due to database error", f"ID: {scooter_id}, Error: {e}", suspicious=True)
-        print(f"❌ Databasefout bij updaten scooter: {e}")
-        db_connection.rollback()
+        print(f"❌ Databasefout tijdens update van veld '{updated_field}': {e}")
         return False
+
 
 
 
@@ -175,17 +171,57 @@ def list_all_scooters(db_connection, username="unknown"):
 
 
 
-def get_scooter_by_id(scooter_id, db_connection) -> Scooter:
-    conn = db_connection
-    cursor = conn.cursor()
-
+def get_scooter_by_id(scooter_id, db):
+    cursor = db.cursor()
     cursor.execute("SELECT * FROM scooters WHERE id = ?", (scooter_id,))
-    scooter = cursor.fetchone()
+    row = cursor.fetchone()
 
-    if not scooter:
-        return False
+    if row:
+        return Scooter(
+            scooter_id=row[0],
+            brand=row[1],
+            model=row[2],
+            serial_number=row[3],
+            top_speed=row[4],
+            battery_capacity=row[5],
+            state_of_charge=row[6],
+            target_soc_range=(row[7], row[8]),  # ✅ correct attribuut
+            location_lat=row[9],
+            location_long=row[10],
+            out_of_service=bool(row[11]),
+            mileage=row[12],
+            last_maintenance_date=row[13]
+        )
+    return None
 
-    return scooter
+
+
+def get_editable_attributes_by_role(role):
+    if role == UserRole.SERVICE_ENGINEER:
+        return [
+            "state_of_charge",
+            "target_soc",
+            "range_km",
+            "location",
+            "out_of_service",
+            "mileage",
+            "last_maintenance_date"
+        ]
+    else:
+        return [
+            "brand",
+            "model",
+            "serial_number",
+            "top_speed",
+            "battery_capacity",
+            "state_of_charge",
+            "target_soc",
+            "range_km",
+            "location",
+            "out_of_service",
+            "mileage",
+            "last_maintenance_date"
+        ]
 
 
 
