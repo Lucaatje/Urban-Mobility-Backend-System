@@ -3,7 +3,7 @@ from utils.commands_ui import clear_console
 from models.models import Scooter, UserRole
 from logs.logger import write_log
 from services.scooter_service import get_editable_attributes_by_role
-from services.scooter_service import get_scooter_by_id
+from services.scooter_service import get_scooter_by_id, search_scooters
 from services.scooter_service import (
     add_scooter,
     update_scooter,
@@ -18,9 +18,11 @@ def manage_scooter_information(logged_in_user):
     print("2. Update an existing scooter")
     print("3. Delete a scooter")
     print("4. Show all scooters")
+    print("5. Search scooters by keyword")
     choice = input("\nChoose an option (1-4): ")
 
     db = get_db_connection()
+    username = logged_in_user.username
 
     if choice == "1":
         if logged_in_user.role == UserRole.SERVICE_ENGINEER:
@@ -75,8 +77,10 @@ def manage_scooter_information(logged_in_user):
 
         if add_scooter(scooter, db):
             print("\n✅ Scooter added.")
+            write_log(username, "Added new scooter", f"Serial: {scooter.serial_number}", suspicious=False)
         else:
             print("\n❌ Failed to add scooter.")
+            write_log(username, "Failed to add scooter", str(e), suspicious=True)
 
         input("\nPress Enter to return...")
         return
@@ -154,15 +158,18 @@ def manage_scooter_information(logged_in_user):
 
         if success:
             print("\n✅ Scooter succesvol bijgewerkt.")
+            write_log(username, f"Updated scooter field '{selected_field}'", f"Scooter ID: {scooter_id}", suspicious=False)
         else:
             print("\n❌ Fout bij updaten van scooter.")
+            write_log(username, f"Tried updating scooter field '{selected_field}'", f"Scooter ID: {scooter_id}", suspicious=True)
 
         input("\nPress Enter to return...")
         return
 
     elif choice == "3":
         if logged_in_user.role == UserRole.SERVICE_ENGINEER:
-            print("❌ Je hebt geen rechten om scooters toe te voegen.")
+            print("❌ Je hebt geen rechten om scooters te verwijderen.")
+            write_log(username, f"Attempted to delete scooter with no permission", f"ID: {scooter_id}", suspicious=True)
             input("Press Enter to return...")
             return
 
@@ -175,8 +182,10 @@ def manage_scooter_information(logged_in_user):
 
         if delete_scooter(scooter_id, db):
             print("\n✅ Scooter deleted.")
+            write_log(username, "Deleted scooter", f"ID: {scooter_id}", suspicious=False)
         else:
             print("\n❌ Failed to delete scooter.")
+            write_log(username, f"Attempted to delete non-existent scooter", f"ID: {scooter_id}", suspicious=True)
         input("\nPress Enter to return...")
         return
 
@@ -184,23 +193,46 @@ def manage_scooter_information(logged_in_user):
         scooters = list_all_scooters(db)
         if not scooters:
             print("⚠️  No scooters found.")
+            write_log(username, "Tried listing all scooters", "", suspicious=True)
         else:
+            write_log(username, "Listed all scooters", "", suspicious=False)
             print("\n📋 List of all scooters:\n")
             for scooter in scooters:
-                print(f"ID: {scooter[0]}")
-                print(f"  Brand: {scooter[1]}")
-                print(f"  Model: {scooter[2]}")
-                print(f"  Serial Number: {scooter[3]}")
-                print(f"  Top Speed: {scooter[4]} km/h")
-                print(f"  Battery Capacity: {scooter[5]} Wh")
-                print(f"  State of Charge: {scooter[6]}%")
-                print(f"  Target SoC Range: {scooter[7]}% - {scooter[8]}%")
-                print(f"  Location: ({scooter[9]}, {scooter[10]})")
-                print(f"  Out of Service: {'Yes' if scooter[11] else 'No'}")
-                print(f"  Mileage: {scooter[12]} km")
-                print(f"  Last Maintenance Date: {scooter[13]}")
+                print(f"ID: {scooter.scooter_id}")
+                print(f"  Brand: {scooter.brand}")
+                print(f"  Model: {scooter.model}")
+                print(f"  Serial Number: {scooter.serial_number}")
+                print(f"  Top Speed: {scooter.top_speed} km/h")
+                print(f"  Battery Capacity: {scooter.battery_capacity} Wh")
+                print(f"  State of Charge: {scooter.state_of_charge}%")
+                print(f"  Target SoC Range: {scooter.target_soc_range[0]}% - {scooter.target_soc_range[1]}%")
+                print(f"  Location: ({scooter.location_lat}, {scooter.location_long})")
+                print(f"  Out of Service: {'Yes' if scooter.out_of_service else 'No'}")
+                print(f"  Mileage: {scooter.mileage} km")
+                print(f"  Last Maintenance Date: {scooter.last_maintenance_date}")
                 print("-" * 40)
         input("\nPress Enter to return...")
+        return
+    
+    elif choice == "5":
+        keyword = input("🔍 Voer zoekterm in (merk, model of serienummer): ")
+        resultaten = search_scooters(keyword, db)
+
+        if not resultaten:
+            print("\n⚠️  Geen scooters gevonden met die zoekterm.")
+            write_log(username, "Tried performing scooter search", f"Search keyword: {keyword}", suspicious=True)
+        else:
+            print("\n📋 Zoekresultaten:\n")
+            write_log(username, "Performed scooter search", f"Search keyword: {keyword}", suspicious=False)
+            for row in resultaten:
+                print(f"ID: {row[0]}")
+                print(f"  Brand: {row[1]}")
+                print(f"  Model: {row[2]}")
+                print(f"  Serial Number: {row[3]}")
+                print(f"  State of Charge: {row[4]}%")
+                print("-" * 40)
+
+        input("\nDruk op Enter om terug te keren...")
         return
 
     else:
