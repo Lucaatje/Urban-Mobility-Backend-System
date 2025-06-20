@@ -5,6 +5,7 @@ from utils.login_page_ui import login_page_ui
 from models.models import User, UserRole
 from utils.manage_scooter_info_ui import manage_scooter_information
 from utils.Manage_travaller_ui import manage_traveller_accounts
+from logs.logger import read_logs
 from database.Backup import *
 HIGHLIGHT = '\033[7m'  # Inverse (white-on-black or black-on-white)
 COMMENT = '\033[90m' # Grey
@@ -78,6 +79,13 @@ def main():
                     else:
                         print(
                             "You do not have permission to manage the database.")
+                case '6':
+                    if (logged_in_user.role == UserRole.SUPER_ADMIN or
+                       logged_in_user.role == UserRole.SYSTEM_ADMIN):
+                        read_logs(logged_in_user)
+                        input("\nDruk op Enter om terug te keren naar het menu...")
+                    else:
+                        print("Je hebt geen toestemming om de logs te bekijken.")
 
 
 
