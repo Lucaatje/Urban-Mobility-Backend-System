@@ -51,6 +51,7 @@ def main():
         # MAIN_MENU NOT FINAL YET, DIFFERENT MENU FOR 3 DIFFERENT USER TYPES
 
         while (True):
+            UI_backup_database(logged_in_user)
             selected_option = main_menu_ui(logged_in_user, message)
 
             match selected_option:
@@ -74,7 +75,7 @@ def main():
                 case '5':
                     if (logged_in_user.role == UserRole.SUPER_ADMIN or
                        logged_in_user.role == UserRole.SYSTEM_ADMIN):
-                        UI_backup_database()
+                        UI_backup_database(logged_in_user)
                     else:
                         print(
                             "You do not have permission to manage the database.")
