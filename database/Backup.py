@@ -91,6 +91,15 @@ def generate_one_time_code():
 
 def UI_backup_database(Logged_in_user: User):
     from models.models import UserRole
+    # check if one time code exists in config.json if not generate one
+    config_path = os.path.join("database", "config.json")
+    if not os.path.exists(config_path):
+        print("Config file does not exist. Cannot proceed with backup/restore.")
+        return
+    with open(config_path, "r") as config_file:
+        config = json.load(config_file)
+    if "one_time_code" not in config:
+        generate_one_time_code()
     while True:
         print("SELECT AN OPTION:\n 1: Backup database\n 2: Restore database\n 3: Exit")
         match input("Enter your choice: ").strip():
