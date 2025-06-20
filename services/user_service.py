@@ -6,6 +6,10 @@ from datetime import datetime, timedelta
 from utils.password_utils import hash_password
 from utils.data_encryption import encrypt, decrypt
 import bcrypt
+import json
+import sqlite3
+
+CONFIG_PATH = "database/config.json"
 
 
 HIGHLIGHT = '\033[7m'  # Inverse (white-on-black or black-on-white)
@@ -44,7 +48,7 @@ def login(username, password):
 
         if decrypted_username == username:
             if bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8')):
-                return User(user_id, enc_username, hashed_password, decrypt(enc_email), UserRole(user_role)), f"Gebruiker '{username}' succesvol ingelogd."
+                return User(user_id, decrypted_username, hashed_password, decrypt(enc_email), UserRole(user_role)), f"Gebruiker '{username}' succesvol ingelogd."
             else:
                 return False, "Gebruikersnaam en of wachtwoord verkeerd."
 
@@ -196,6 +200,94 @@ def retrieve_users(page_number):
     conn.close()
     return users, user_count
 
+def retrieve_system_admins(page_number):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    row_start = (page_number - 1) * 10
+
+    # Only fetch SYSTEM_ADMINISTRATOR users
+    query = """
+        SELECT id, username, email, password, role
+        FROM users
+        WHERE role = ?
+        LIMIT 10 OFFSET ?
+    """
+    cursor.execute(query, (UserRole.SYSTEM_ADMIN.value, row_start))
+    rows = cursor.fetchall()
+
+    users = []
+    for row in rows:
+        id, enc_username, enc_email, password, role_str = row
+        try:
+            username = decrypt(enc_username)
+        except Exception:
+            username = "[Fout bij decryptie username]"
+        try:
+            email = decrypt(enc_email)
+        except Exception:
+            email = "[Fout bij decryptie email]"
+        role = UserRole(role_str)
+        user = User(id, username, password, email, role)
+        users.append(user)
+
+    # Get total count of SYSTEM_ADMINISTRATOR users
+    # cursor.execute("SELECT COUNT(*) FROM users WHERE role = ?", (UserRole.SYSTEM_ADMINISTRATOR.value,))
+    # user_count = cursor.fetchone()[0]
+
+    conn.close()
+    return users
+
+def store_restore_code(selected_user, code, backup_filename):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        record = cursor.execute("""
+            SELECT id
+            FROM restore_codes
+            WHERE user_id = ?
+        """, (selected_user.user_id,)).fetchone()
+
+        if record:
+            cursor.execute("""
+                UPDATE restore_codes
+                SET restore_code = ?, backup_filename = ?
+                WHERE id = ?
+            """, (encrypt(code), encrypt(backup_filename), record[0]))
+        else:
+            cursor.execute("""
+                INSERT INTO restore_codes (user_id, restore_code, backup_filename)
+                VALUES (?, ?, ?)
+            """, (selected_user.user_id, encrypt(code), encrypt(backup_filename)))
+        conn.commit()
+    except Exception as e:
+        raise ValueError(f"Updatefout: {e}")
+    finally:
+        conn.close()
+
+def delete_restore_code(restore_code_id, backup_path, logged_in_user):
+    conn = sqlite3.connect(backup_path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            DELETE FROM restore_codes
+            WHERE id = ?
+        """, (restore_code_id,))
+
+        valid, message = username_checker(logged_in_user.username)
+        if valid:
+            cursor.execute("""
+            INSERT INTO users (username, email, password, role)
+            VALUES (?, ?, ?, ?)
+            """, (encrypt(logged_in_user.username), encrypt(logged_in_user.email), logged_in_user.password_hash, logged_in_user.role.value))
+
+        conn.commit()
+    except Exception as e:
+        raise ValueError(f"Verwijderfout: {e}")
+    finally:
+        conn.close()
 
 def temp_password_add(username, password, expire_date):
     conn = get_db_connection()
