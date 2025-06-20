@@ -29,7 +29,7 @@ def manage_scooter_information(logged_in_user):
 
     if choice == "1":
         if logged_in_user.role == UserRole.SERVICE_ENGINEER:
-            print("❌ Je hebt geen rechten om scooters toe te voegen.")
+            print("You do not have permission to add scooters.")
             input("Press Enter to return...")
             return
 
@@ -46,7 +46,7 @@ def manage_scooter_information(logged_in_user):
             soc_min = float(input("Target SoC Minimum (%): "))
             soc_max = float(input("Target SoC Maximum (%): "))
         except ValueError:
-            print("❌ Invalid input for SoC range.")
+            print("Invalid input for SoC range.")
             input("Press Enter to return...")
             return
 
@@ -74,15 +74,15 @@ def manage_scooter_information(logged_in_user):
                 last_maintenance_date
             )
         except Exception as e:
-            print(f"\n❌ Failed to create Scooter object: {e}")
+            print(f"\nFailed to create Scooter object: {e}")
             input("Press Enter to return...")
             return
 
         if add_scooter(scooter, db):
-            print("\n✅ Scooter added.")
+            print("\nScooter added.")
             write_log(username, "Added new scooter", f"Serial: {scooter.serial_number}", suspicious=False)
         else:
-            print("\n❌ Failed to add scooter.")
+            print("\nFailed to add scooter.")
             write_log(username, "Failed to add scooter", str(e), suspicious=True)
 
         input("\nPress Enter to return...")
@@ -92,20 +92,20 @@ def manage_scooter_information(logged_in_user):
         try:
             scooter_id = int(input("Enter the ID of the scooter you want to update: "))
         except ValueError:
-            print("❌ Invalid ID format.")
+            print("Invalid ID format.")
             input("Press Enter to return...")
             return
 
         existing_scooter = get_scooter_by_id(scooter_id, db)
         if not existing_scooter:
             write_log(logged_in_user.username, "Attempted to update non-existent scooter", f"ID: {scooter_id}", suspicious=True)
-            print(f"❌ Scooter ID {scooter_id} bestaat niet.")
+            print(f"Scooter ID {scooter_id} bestaat niet.")
             input("Press Enter to return...")
             return
 
         editable_fields = get_editable_attributes_by_role(logged_in_user.role)
 
-        print("\n📋 Kies welk attribuut je wilt bewerken:")
+        print("\n📋 Choose which attribute you want to update:")
         for i, attr in enumerate(editable_fields, 1):
             print(f"{i}. {attr.replace('_', ' ').title()}")
 
@@ -114,7 +114,7 @@ def manage_scooter_information(logged_in_user):
             if field_choice < 1 or field_choice > len(editable_fields):
                 raise ValueError
         except ValueError:
-            print("❌ Ongeldige keuze.")
+            print("Invalid choice.")
             input("Press Enter to return...")
             return
 
@@ -127,7 +127,7 @@ def manage_scooter_information(logged_in_user):
                 max_val = float(input("Nieuwe maximum SoC (%): "))
                 updates[selected_field] = (min_val, max_val)
             except ValueError:
-                print("❌ Ongeldige invoer voor SoC-range.")
+                print("Invalid input for SoC range.")
                 input("Press Enter to return...")
                 return
         elif selected_field == "location":
@@ -140,11 +140,11 @@ def manage_scooter_information(logged_in_user):
             try:
                 updates[selected_field] = float(input(f"Nieuwe waarde voor '{selected_field}': "))
             except ValueError:
-                print("❌ Ongeldige numerieke invoer.")
+                print("Invalid numeric input.")
                 input("Press Enter to return...")
                 return
         else:
-            updates[selected_field] = input(f"Nieuwe waarde voor '{selected_field}': ")
+            updates[selected_field] = input(f"New value for '{selected_field}': ")
         
         
         if selected_field == "target_soc":
@@ -160,10 +160,10 @@ def manage_scooter_information(logged_in_user):
         success = update_scooter(scooter_id, existing_scooter, db, username=logged_in_user.username, updated_field=selected_field)
 
         if success:
-            print("\n✅ Scooter succesvol bijgewerkt.")
+            print("\nScooter successfully updated.")
             write_log(username, f"Updated scooter field '{selected_field}'", f"Scooter ID: {scooter_id}", suspicious=False)
         else:
-            print("\n❌ Fout bij updaten van scooter.")
+            print("\nFailed to update scooter.")
             write_log(username, f"Tried updating scooter field '{selected_field}'", f"Scooter ID: {scooter_id}", suspicious=True)
 
         input("\nPress Enter to return...")
@@ -171,7 +171,7 @@ def manage_scooter_information(logged_in_user):
 
     elif choice == "3":
         if logged_in_user.role == UserRole.SERVICE_ENGINEER:
-            print("❌ Je hebt geen rechten om scooters te verwijderen.")
+            print("You do not have permission to delete scooters.")
             write_log(username, f"Attempted to delete scooter with no permission", f"ID: {scooter_id}", suspicious=True)
             input("Press Enter to return...")
             return
@@ -179,15 +179,15 @@ def manage_scooter_information(logged_in_user):
         try:
             scooter_id = int(input("Enter the ID of the scooter you want to delete: "))
         except ValueError:
-            print("❌ Invalid ID format.")
+            print("Invalid ID format.")
             input("Press Enter to return...")
             return
 
         if delete_scooter(scooter_id, db):
-            print("\n✅ Scooter deleted.")
+            print("\nScooter deleted.")
             write_log(username, "Deleted scooter", f"ID: {scooter_id}", suspicious=False)
         else:
-            print("\n❌ Failed to delete scooter.")
+            print("\nFailed to delete scooter.")
             write_log(username, f"Attempted to delete non-existent scooter", f"ID: {scooter_id}", suspicious=True)
         input("\nPress Enter to return...")
         return
@@ -195,11 +195,11 @@ def manage_scooter_information(logged_in_user):
     elif choice == "4":
         scooters = list_all_scooters(db)
         if not scooters:
-            print("⚠️  No scooters found.")
+            print("No scooters found.")
             write_log(username, "Tried listing all scooters", "", suspicious=True)
         else:
             write_log(username, "Listed all scooters", "", suspicious=False)
-            print("\n📋 List of all scooters:\n")
+            print("\nList of all scooters:\n")
             for scooter in scooters:
                 print(f"ID: {scooter.scooter_id}")
                 print(f"  Brand: {scooter.brand}")
@@ -218,11 +218,11 @@ def manage_scooter_information(logged_in_user):
         return
     
     elif choice == "5":
-        keyword = input("🔍 Voer zoekterm in (merk, model of serienummer): ")
+        keyword = input("Enter search keyword (brand, model or serial number): ")
         resultaten = search_scooters(keyword, db)
 
         if not resultaten:
-            print("\n⚠️  Geen scooters gevonden met die zoekterm.")
+            print("\nNo scooters found for that keyword.")
             write_log(username, "Tried performing scooter search", f"Search keyword: {keyword}", suspicious=True)
         else:
             print("\n📋 Zoekresultaten:\n")
@@ -235,11 +235,11 @@ def manage_scooter_information(logged_in_user):
                 print(f"  State of Charge: {row[4]}%")
                 print("-" * 40)
 
-        input("\nDruk op Enter om terug te keren...")
+        input("\nPress Enter to return...")
         return
 
     else:
-        print("❌ Invalid choice.")
+        print("Invalid choice.")
         input("Press Enter to return...")
         return
 

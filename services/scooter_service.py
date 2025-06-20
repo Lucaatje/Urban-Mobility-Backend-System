@@ -11,7 +11,7 @@ def add_scooter(scooter: Scooter, db_connection, username="unknown"):
 
     validation_error = validate_scooter_data(scooter)
     if validation_error:
-        print(f"Validatiefout: {validation_error}")
+        print(f"Validation error: {validation_error}")
         return False
 
     try:
@@ -40,7 +40,7 @@ def add_scooter(scooter: Scooter, db_connection, username="unknown"):
         return True
 
     except Exception as e:
-        print(f"Databasefout bij toevoegen scooter: {e}")
+        print(f"Database error while adding scooter: {e}")
         return False
 
 
@@ -48,7 +48,7 @@ def add_scooter(scooter: Scooter, db_connection, username="unknown"):
 def update_scooter(scooter_id, updated_scooter: Scooter, db, username=None, updated_field=None):
     validation_error = validate_scooter_data(updated_scooter)
     if validation_error:
-        print(f"❌ Validatiefout voor veld '{updated_field}': {validation_error}")
+        print(f"Validation error for field '{updated_field}': {validation_error}")
         return False
     
     conn = db
@@ -92,7 +92,7 @@ def update_scooter(scooter_id, updated_scooter: Scooter, db, username=None, upda
         return True
 
     except Exception as e:
-        print(f"❌ Databasefout tijdens update van veld '{updated_field}': {e}")
+        print(f"Database error while updating field '{updated_field}': {e}")
         return False
 
 
@@ -112,7 +112,7 @@ def delete_scooter(scooter_id, db_connection, username="unknown"):
         return True
     
     except Exception as e:
-        print(f"Fout bij verwijderen van scooter: {e}")
+        print(f"Error while deleting scooter: {e}")
         return False
 
 
@@ -144,13 +144,13 @@ def search_scooters(keyword, db_connection):
                         row[0], decrypted_brand, decrypted_model, decrypted_serial, decrypted_soc
                     ))
             except Exception as e:
-                print(f"❌ Fout bij decryptie tijdens zoeken: {e}")
+                print(f"Error during decryption while searching: {e}")
                 continue
 
         return resultaten
 
     except Exception as e:
-        print(f"❌ Fout bij zoeken naar scooters: {e}")
+        print(f"Error while searching for scooters: {e}")
         return []
 
 
@@ -187,14 +187,14 @@ def list_all_scooters(db_connection, username="unknown"):
                 )
                 scooters.append(scooter)
             except Exception as e:
-                print(f"Fout bij decryptie scooter in lijst: {e}")
+                print(f"Error during scooter decryption in list: {e}")
                 continue
 
         return scooters
 
     except Exception as e:
         write_log(username, "Failed to list scooters", str(e), suspicious=True)
-        print(f"Fout bij ophalen van scooters: {e}")
+        print(f"Error while retrieving scooters: {e}")
         return []
 
 
@@ -259,26 +259,26 @@ def get_editable_attributes_by_role(role):
 def validate_scooter_data(scooter: Scooter) -> str | None:
 
     if not (10 <= len(scooter.serial_number) <= 17) or not scooter.serial_number.isalnum():
-        return "Serienummer moet 10–17 alfanumerieke tekens bevatten."
+        return "Serial number must be 10–17 alphanumeric characters."
 
     if not (0 <= scooter.state_of_charge <= 100):
-        return "State of Charge (SoC) moet tussen 0 en 100% liggen."
+        return "State of Charge (SoC) must be between 0 and 100%."
 
     if not isinstance(scooter.target_soc_range, tuple) or len(scooter.target_soc_range) != 2:
-        return "Target SoC Range moet een tuple zijn van (min, max)."
+        return "Target SoC Range must be a tuple of (min, max)."
 
     min_soc, max_soc = scooter.target_soc_range
     if not (0 <= min_soc < max_soc <= 100):
-        return "Target SoC Range moet geldig zijn en tussen 0 en 100% liggen."
+        return "Target SoC Range must be valid and between 0 and 100%."
 
     if not (51.85 <= scooter.location_lat <= 52.00 and 4.25 <= scooter.location_long <= 4.60):
-        return "Locatie moet binnen regio Rotterdam liggen."
+        return "Location must be within the Rotterdam region."
 
     from datetime import datetime
     try:
         datetime.strptime(scooter.last_maintenance_date, "%Y-%m-%d")
     except (ValueError, TypeError):
-        return "Datum laatste onderhoud moet in formaat YYYY-MM-DD zijn."
+        return "Last maintenance date must be in the format YYYY-MM-DD."
 
     return None
 

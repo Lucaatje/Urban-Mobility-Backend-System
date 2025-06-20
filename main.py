@@ -83,9 +83,9 @@ def main():
                     if (logged_in_user.role == UserRole.SUPER_ADMIN or
                        logged_in_user.role == UserRole.SYSTEM_ADMIN):
                         read_logs(logged_in_user)
-                        input("\nDruk op Enter om terug te keren naar het menu...")
+                        input("\nPress Enter to return to the main menu...")
                     else:
-                        print("Je hebt geen toestemming om de logs te bekijken.")
+                        print("You do not have permission to view the logs.")
 
 
 
