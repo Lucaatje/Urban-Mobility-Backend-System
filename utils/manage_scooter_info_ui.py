@@ -10,6 +10,7 @@ from services.scooter_service import (
     delete_scooter,
     list_all_scooters
 )
+from utils.data_encryption import decrypt
 
 def manage_scooter_information(logged_in_user):
     clear_console()
@@ -22,7 +23,9 @@ def manage_scooter_information(logged_in_user):
     choice = input("\nChoose an option (1-4): ")
 
     db = get_db_connection()
-    username = logged_in_user.username
+
+    encrypted_username = logged_in_user.username
+    username = decrypt(encrypted_username)
 
     if choice == "1":
         if logged_in_user.role == UserRole.SERVICE_ENGINEER:

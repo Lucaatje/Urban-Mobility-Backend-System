@@ -1,6 +1,7 @@
 from services.user_service import retrieve_users, register, update, delete
 from utils.commands_ui import clear_console
 from models.models import UserRole
+from utils.data_encryption import decrypt
 
 
 HIGHLIGHT = '\033[7m'  # Inverse (white-on-black or black-on-white)
@@ -19,8 +20,10 @@ RESET = '\033[0m' # Return to normal (Always use this after coloring data)
 def print_visible_users(logged_in_user, user_list, response, page_number, user_count):
     clear_console()
 
+    decrypted_username = decrypt(logged_in_user.username)
+
     print('╔' + '═' * 120 + '╗')
-    print(f'║ {logged_in_user.role.value} - id: {logged_in_user.user_id} - username: {logged_in_user.username}'.ljust(61) + f'total users: {user_count} ║'.rjust(61))
+    print(f'║ {logged_in_user.role.value} - id: {logged_in_user.user_id} - username: {decrypted_username}'.ljust(61) + f'total users: {user_count} ║'.rjust(61))
     print('╠' + '═' * 120 + '╣')
 
     for user in user_list:
@@ -138,7 +141,7 @@ def register_user(logged_in_user):
             role = UserRole.SYSTEM_ADMIN if role == UserRole.SERVICE_ENGINEER else UserRole.SERVICE_ENGINEER
         elif choice == 't': show_password = not show_password
         elif choice == '1': 
-            valid, message = register(username, email, password, role)
+            valid, message = register(username, email, password, role, executed_by=logged_in_user.username)
             if valid: return f"{SUCCES}{message}{RESET}"
             else: prompt = f"{WARNING}{message}{RESET}"
         elif choice == '2': return ''
@@ -154,8 +157,16 @@ def print_user_details(username, email, password, role, show_password, can_chang
     clear_console()
     password = '*' * len(password) if not show_password else password
 
+    try:
+        if selected_user.role == UserRole.SYSTEM_ADMIN:
+            username_ph = f'{COMMENT}{decrypt(selected_user.username)}{RESET}'
+        else:
+            username_ph = f'{COMMENT}{selected_user.username}{RESET}'
+    except Exception:
+        # Fallback bij decryptieproblemen
+        username_ph = f'{COMMENT}{selected_user.username}{RESET}'
+
     # Placeholders:
-    username_ph = f'{COMMENT}{selected_user.username}{RESET}'
     email_ph = f'{COMMENT}{selected_user.email}{RESET}'
     password_ph = f'{COMMENT}password{RESET}'
     role_comment = f'{COMMENT}Switch Role: R{RESET}' if selected_user.role != UserRole.SYSTEM_ADMIN else ''
@@ -206,7 +217,7 @@ def user_details_page_ui(selected_user, logged_in_user):
             elif valid: prompt = f"{SUCCES}{message}{RESET}"
             else: prompt = f"{WARNING}{message}{RESET}"
         elif choice == '2':
-            valid, message = delete(selected_user)
+            valid, message = delete(selected_user, executed_by=logged_in_user.username)
             if valid and selected_user.user_id == logged_in_user.user_id: return "REDIRECT_LOGIN"
             elif valid: return message
             else: prompt = message

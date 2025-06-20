@@ -3,7 +3,7 @@ from utils.input_validation import *
 import os
 import datetime
 from logs.logger import write_log
-
+from utils.data_encryption import decrypt
 
 def Print_Traveller_menu():
     print("1. Add Traveller")
@@ -18,10 +18,13 @@ def manage_traveller_accounts(logged_in_user):
         Print_Traveller_menu()
         choice = input("Select an option: ").strip()
 
+        encrypted_username = logged_in_user.username
+        username = decrypt(encrypted_username)
+
         if choice == '1':
             traveller = Create_traveller()
             RegisterTraveller(traveller)
-            write_log(logged_in_user.username, "Added traveller", f"{traveller.first_name} {traveller.last_name}")
+            write_log(username, "Added traveller", f"{traveller.first_name} {traveller.last_name}")
 
         elif choice == '2':
             print("Available Travellers:")
@@ -48,7 +51,7 @@ def manage_traveller_accounts(logged_in_user):
                     write_log(logged_in_user.username, "Viewed traveller", f"ID: {traveller.id}")
             else:
                 print("Traveller not found.")
-                write_log(logged_in_user.username, "View traveller failed", f"ID: {traveller_id}", suspicious=True)
+                write_log(username, "View traveller failed", f"ID: {traveller_id}", suspicious=True)
 
 
         elif choice == '3':
@@ -61,10 +64,10 @@ def manage_traveller_accounts(logged_in_user):
                 if DeleteTravellerById(int(traveller_id)):
                     print(
                         f"Traveller with ID {traveller_id} has been deleted.")
-                    write_log(logged_in_user.username, "Deleted traveller", f"ID: {traveller_id}")
+                    write_log(username, "Deleted traveller", f"ID: {traveller_id}")
                 else:
                     print(f"Traveller with ID {traveller_id} not found.")
-                    write_log(logged_in_user.username, "Delete traveller failed", f"ID: {traveller_id}", suspicious=True)
+                    write_log(username, "Delete traveller failed", f"ID: {traveller_id}", suspicious=True)
             else:
                 print("Traveller deletion cancelled.")
 
@@ -83,13 +86,13 @@ def manage_traveller_accounts(logged_in_user):
                 traveller_id = int(traveller_id_input)
             except ValueError:
                 print("Invalid ID format. Please enter a number.")
-                write_log(logged_in_user.username, "Update traveller failed", f"Invalid ID: {traveller_id_input}", suspicious=True)
+                write_log(username, "Update traveller failed", f"Invalid ID: {traveller_id_input}", suspicious=True)
                 continue
 
             traveller = GetTravellerById(traveller_id)
             if traveller is None:
                 print("Traveller not found.")
-                write_log(logged_in_user.username, "Update traveller failed", f"ID not found: {traveller_id}", suspicious=True)
+                write_log(username, "Update traveller failed", f"ID not found: {traveller_id}", suspicious=True)
                 continue
 
             print("Update the traveller's information. Press Enter to keep existing values.")
@@ -102,10 +105,10 @@ def manage_traveller_accounts(logged_in_user):
             updated_traveller.id = traveller_id  # Ensure ID is preserved
             if UpdateTraveller(updated_traveller):
                 print("Traveller successfully updated.")
-                write_log(logged_in_user.username, "Updated traveller", f"ID: {traveller_id}")
+                write_log(username, "Updated traveller", f"ID: {traveller_id}")
             else:
                 print("Traveller update failed.")
-                write_log(logged_in_user.username, "Update traveller failed", f"ID: {traveller_id}", suspicious=True)
+                write_log(username, "Update traveller failed", f"ID: {traveller_id}", suspicious=True)
 
         elif choice == '5':
             print("Exiting traveller management.")
