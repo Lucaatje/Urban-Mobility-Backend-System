@@ -1,5 +1,6 @@
-from models.models import Scooter
+from models.models import Scooter, UserRole
 from logs.logger import write_log
+from utils.data_encryption import encrypt, decrypt
 
 
 
@@ -21,49 +22,40 @@ def add_scooter(scooter: Scooter, db_connection, username="unknown"):
                 latitude, longitude, out_of_service, mileage, last_maintenance
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            scooter.brand,
-            scooter.model,
-            scooter.serial_number,
-            scooter.top_speed,
-            scooter.battery_capacity,
-            scooter.state_of_charge,
-            scooter.target_soc_range[0],
-            scooter.target_soc_range[1],
-            scooter.location_lat,
-            scooter.location_long,
-            int(scooter.out_of_service),
-            scooter.mileage,
-            scooter.last_maintenance_date
+            encrypt(scooter.brand),
+            encrypt(scooter.model),
+            encrypt(scooter.serial_number),
+            encrypt(str(scooter.top_speed)),
+            encrypt(str(scooter.battery_capacity)),
+            encrypt(str(scooter.state_of_charge)),
+            encrypt(str(scooter.target_soc_range[0])),
+            encrypt(str(scooter.target_soc_range[1])),
+            encrypt(str(scooter.location_lat)),
+            encrypt(str(scooter.location_long)),
+            int(scooter.out_of_service),  # Booleans en integers hoef je niet te encrypten tenzij gevoelig
+            encrypt(str(scooter.mileage)),
+            encrypt(scooter.last_maintenance_date)
         ))
         db_connection.commit()
-        write_log(username, "Added new scooter", f"Serial: {scooter.serial_number}", suspicious=False)
         return True
 
     except Exception as e:
-        write_log(username, "Failed to add scooter", str(e), suspicious=True)
         print(f"Databasefout bij toevoegen scooter: {e}")
         return False
 
 
 
-def update_scooter(scooter_id, updated_scooter, db_connection, username="unknown"):
-    
-    conn = db_connection
-    cursor = conn.cursor()
-
-    scooter = get_scooter_by_id(scooter_id)
-    if not scooter:
-        return False
-    
-
+def update_scooter(scooter_id, updated_scooter: Scooter, db, username=None, updated_field=None):
     validation_error = validate_scooter_data(updated_scooter)
     if validation_error:
-        write_log(username, "Failed to update scooter due to validation error", f"ID: {scooter_id}, Error: {validation_error}", suspicious=True)
-        print(f"Validatiefout: {validation_error}")
+        print(f"❌ Validatiefout voor veld '{updated_field}': {validation_error}")
         return False
+    
+    conn = db
+    cursor = conn.cursor()
 
     try:
-        cursor.execute("""
+        query = """
             UPDATE scooters SET
                 brand = ?,
                 model = ?,
@@ -79,32 +71,30 @@ def update_scooter(scooter_id, updated_scooter, db_connection, username="unknown
                 mileage = ?,
                 last_maintenance = ?
             WHERE id = ?
-        """, (
-            updated_scooter.brand,
-            updated_scooter.model,
-            updated_scooter.serial_number,
-            updated_scooter.top_speed,
-            updated_scooter.battery_capacity,
-            updated_scooter.state_of_charge,
-            updated_scooter.target_soc_range[0],
-            updated_scooter.target_soc_range[1],
-            updated_scooter.location_lat,
-            updated_scooter.location_long,
+        """
+        cursor.execute(query, (
+            encrypt(updated_scooter.brand),
+            encrypt(updated_scooter.model),
+            encrypt(updated_scooter.serial_number),
+            encrypt(str(updated_scooter.top_speed)),
+            encrypt(str(updated_scooter.battery_capacity)),
+            encrypt(str(updated_scooter.state_of_charge)),
+            encrypt(str(updated_scooter.target_soc_range[0])),
+            encrypt(str(updated_scooter.target_soc_range[1])),
+            encrypt(str(updated_scooter.location_lat)),
+            encrypt(str(updated_scooter.location_long)),
             int(updated_scooter.out_of_service),
-            updated_scooter.mileage,
-            updated_scooter.last_maintenance_date,
+            encrypt(str(updated_scooter.mileage)),
+            encrypt(updated_scooter.last_maintenance_date),
             scooter_id
         ))
-
-        db_connection.commit()
-        write_log(username, "Updated scooter", f"ID: {scooter_id}", suspicious=False)
+        conn.commit()
         return True
 
     except Exception as e:
-        write_log(username, "Failed to update scooter due to database error", f"ID: {scooter_id}, Error: {e}", suspicious=True)
-        print(f"❌ Databasefout bij updaten scooter: {e}")
-        db_connection.rollback()
+        print(f"❌ Databasefout tijdens update van veld '{updated_field}': {e}")
         return False
+
 
 
 
@@ -114,17 +104,14 @@ def delete_scooter(scooter_id, db_connection, username="unknown"):
     
     scooter = get_scooter_by_id(scooter_id, db_connection)
     if not scooter:
-        write_log(username, f"Attempted to delete non-existent scooter", f"ID: {scooter_id}", suspicious=True)
         return False
 
     try:
         cursor.execute("DELETE FROM scooters WHERE id = ?", (scooter_id,))
         conn.commit()
-        write_log(username, "Deleted scooter", f"ID: {scooter_id}", suspicious=False)
         return True
     
     except Exception as e:
-        write_log(username, "Failed to delete scooter", f"ID: {scooter_id} Error: {e}", suspicious=True)
         print(f"Fout bij verwijderen van scooter: {e}")
         return False
 
@@ -133,24 +120,37 @@ def delete_scooter(scooter_id, db_connection, username="unknown"):
 def search_scooters(keyword, db_connection):
     conn = db_connection
     cursor = conn.cursor()
-    searchterm = f"%{keyword}%"
+    keyword = keyword.lower()
 
     try:
         cursor.execute("""
             SELECT id, brand, model, serial_number, state_of_charge
             FROM scooters
-            WHERE brand LIKE ? OR model LIKE ? OR serial_number LIKE ?
-        """, (searchterm, searchterm, searchterm))
+        """)
+        rows = cursor.fetchall()
 
-        resultaten = cursor.fetchall()
+        resultaten = []
+        for row in rows:
+            try:
+                decrypted_brand = decrypt(row[1])
+                decrypted_model = decrypt(row[2])
+                decrypted_serial = decrypt(row[3])
+                decrypted_soc = int(float(decrypt(row[4])))
 
-        if not resultaten:
-            return []
+                if (keyword in decrypted_brand.lower()
+                    or keyword in decrypted_model.lower()
+                    or keyword in decrypted_serial.lower()):
+                    resultaten.append((
+                        row[0], decrypted_brand, decrypted_model, decrypted_serial, decrypted_soc
+                    ))
+            except Exception as e:
+                print(f"❌ Fout bij decryptie tijdens zoeken: {e}")
+                continue
 
         return resultaten
 
     except Exception as e:
-        print(f"Fout bij zoeken naar scooters: {e}")
+        print(f"❌ Fout bij zoeken naar scooters: {e}")
         return []
 
 
@@ -159,15 +159,39 @@ def list_all_scooters(db_connection, username="unknown"):
     cursor = db_connection.cursor()
     try:
         cursor.execute("SELECT * FROM scooters")
-        scooters = cursor.fetchall()
+        rows = cursor.fetchall()
 
-        write_log(username, "Listed all scooters", "", suspicious=False)
+        if not rows:
+            return []
 
-        if not scooters:
-            return
+        scooters = []
+        for row in rows:
+            try:
+                scooter = Scooter(
+                    scooter_id=row[0],
+                    brand=decrypt(row[1]),
+                    model=decrypt(row[2]),
+                    serial_number=decrypt(row[3]),
+                    top_speed=float(decrypt(row[4])),
+                    battery_capacity=float(decrypt(row[5])),
+                    state_of_charge=int(float(decrypt(row[6]))),
+                    target_soc_range=(
+                        int(float(decrypt(row[7]))),
+                        int(float(decrypt(row[8])))
+                    ),
+                    location_lat=float(decrypt(row[9])),
+                    location_long=float(decrypt(row[10])),
+                    out_of_service=bool(row[11]),
+                    mileage=float(decrypt(row[12])),
+                    last_maintenance_date=decrypt(row[13])
+                )
+                scooters.append(scooter)
+            except Exception as e:
+                print(f"Fout bij decryptie scooter in lijst: {e}")
+                continue
 
         return scooters
-    
+
     except Exception as e:
         write_log(username, "Failed to list scooters", str(e), suspicious=True)
         print(f"Fout bij ophalen van scooters: {e}")
@@ -175,17 +199,60 @@ def list_all_scooters(db_connection, username="unknown"):
 
 
 
-def get_scooter_by_id(scooter_id, db_connection) -> Scooter:
-    conn = db_connection
-    cursor = conn.cursor()
-
+def get_scooter_by_id(scooter_id, db):
+    cursor = db.cursor()
     cursor.execute("SELECT * FROM scooters WHERE id = ?", (scooter_id,))
-    scooter = cursor.fetchone()
+    row = cursor.fetchone()
 
-    if not scooter:
-        return False
+    if row:
+        return Scooter(
+            scooter_id=row[0],
+            brand=decrypt(row[1]),
+            model=decrypt(row[2]),
+            serial_number=decrypt(row[3]),
+            top_speed=float(decrypt(row[4])),
+            battery_capacity=float(decrypt(row[5])),
+            state_of_charge=int(float(decrypt(row[6]))),
+            target_soc_range=(
+                int(float(decrypt(row[7]))),
+                int(float(decrypt(row[8])))
+            ),
+            location_lat=float(decrypt(row[9])),
+            location_long=float(decrypt(row[10])),
+            out_of_service=bool(row[11]),
+            mileage=float(decrypt(row[12])),
+            last_maintenance_date=decrypt(row[13])
+        )
+    return None
 
-    return scooter
+
+
+def get_editable_attributes_by_role(role):
+    if role == UserRole.SERVICE_ENGINEER:
+        return [
+            "state_of_charge",
+            "target_soc",
+            "range_km",
+            "location",
+            "out_of_service",
+            "mileage",
+            "last_maintenance_date"
+        ]
+    else:
+        return [
+            "brand",
+            "model",
+            "serial_number",
+            "top_speed",
+            "battery_capacity",
+            "state_of_charge",
+            "target_soc",
+            "range_km",
+            "location",
+            "out_of_service",
+            "mileage",
+            "last_maintenance_date"
+        ]
 
 
 

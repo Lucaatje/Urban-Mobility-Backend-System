@@ -3,6 +3,9 @@ from utils.input_validation import username_checker, password_checker
 from models.models import User, UserRole
 from utils.commands_ui import clear_console
 from datetime import datetime, timedelta
+from utils.password_utils import hash_password
+from utils.data_encryption import encrypt, decrypt
+import bcrypt
 
 
 HIGHLIGHT = '\033[7m'  # Inverse (white-on-black or black-on-white)
@@ -12,24 +15,41 @@ BUTTON = '\033[34m'  # Blue
 WARNING = '\033[31m' # Red
 RESET = '\033[0m' # Return to normal (Always use this after coloring data)
 
+
+
 def login(username, password):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    if len(username) == 0 and len(password) == 0: return False, "Enter username and password."
-    if len(username) == 0: return False, "Enter username."
-    if len(password) == 0: return False, "Enter password."
+    if len(username) == 0 and len(password) == 0: 
+        return False, "Enter username and password."
+    if len(username) == 0: 
+        return False, "Enter username."
+    if len(password) == 0: 
+        return False, "Enter password."
 
-    # CREATE HASH-FUNCTION: Hash password before comparing password with the password inside database.
-    
-    cursor.execute("SELECT id, username, email, password, role FROM users WHERE username = ? AND password = ?", (username, password))
-    user = cursor.fetchone()
+    # Laad alle gebruikers op (gebruikersnaam is encrypted in DB)
+    cursor.execute("SELECT id, username, email, password, role FROM users")
+    users = cursor.fetchall()
     conn.close()
 
-    if user:
-        return User(user[0], user[1], user[3], user[2], UserRole(user[4])), f"Gebruiker '{username}' succesvol ingelogd."
-    else:
-        return False, "Gebruikersnaam en of wachtwoord verkeerd."
+    # Doorloop gebruikers, decrypt gebruikersnaam, en vergelijk
+    for user in users:
+        user_id, enc_username, enc_email, hashed_password, user_role = user
+
+        try:
+            decrypted_username = decrypt(enc_username)
+        except Exception as e:
+            continue  # Sla corrupte records over
+
+        if decrypted_username == username:
+            if bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8')):
+                return User(user_id, enc_username, hashed_password, decrypt(enc_email), UserRole(user_role)), f"Gebruiker '{username}' succesvol ingelogd."
+            else:
+                return False, "Gebruikersnaam en of wachtwoord verkeerd."
+
+    return False, "Gebruikersnaam en of wachtwoord verkeerd."
+
 
 
 
@@ -49,17 +69,24 @@ def register(username, email, password, role):
     # if not valid:
     #     return valid, message
 
+    hashed_password = hash_password(password)
+
+    encrypted_username = encrypt(username)
+    encrypted_email = encrypt(email)
+
     try:
         cursor.execute("""
         INSERT INTO users (username, email, password, role)
         VALUES (?, ?, ?, ?)
-        """, (username, email, password, role.value))
+        """, (encrypted_username, encrypted_email, hashed_password, role.value))
         conn.commit()
         return valid, f"Gebruiker '{username}' succesvol geregistreerd."
     except Exception as e:
         return False, f"Registratiefout: {e}"
     finally:
         conn.close()
+
+
 
 def update(user_id, username, email, password, role, selected_user):
     conn = get_db_connection()
@@ -69,10 +96,10 @@ def update(user_id, username, email, password, role, selected_user):
         valid, message = username_checker(username)
         if not valid:
             return valid, message
+        enc_username = encrypt(username)
     else:
         username = selected_user.username
-
-    # MOST LIKELY WILL GET A EMAIL_CHECKER() ASWELL!
+        enc_username = encrypt(username)  # nodig voor storage
 
     if password != '':
         valid, message = password_checker(password)
@@ -82,26 +109,25 @@ def update(user_id, username, email, password, role, selected_user):
         if not valid:
             return valid, message
 
-    if email == '': email = selected_user.email 
-    # if email != '':
-    #     valid, message = email_checker(email)
-    #     if not valid:
-    #         return valid, message
-    # else:
-    #     email = selected_user.email
-    
+    if email == '':
+        email = selected_user.email
+    # Hier zou je een email_checker() kunnen toevoegen
+    enc_email = encrypt(email)
+
     try:
         cursor.execute("""
             UPDATE users
             SET username = ?, email = ?, role = ?
             WHERE id = ?
-        """, (username, email, role.value, user_id))
+        """, (enc_username, enc_email, role.value, user_id))
         conn.commit()
-        return True, f"Gebruiker '{username}' succesvol geupdate."
+        return True, f"Gebruiker '{username}' succesvol geüpdatet."
     except Exception as e:
         return False, f"Updatefout: {e}"
     finally:
         conn.close()
+
+
 
 def delete(selected_user):
     while True:
@@ -119,6 +145,8 @@ def delete(selected_user):
     cursor = conn.cursor()
 
     try:
+        encrypted_username = encrypt(selected_user.username)
+
         cursor.execute("""
             DELETE FROM users
             WHERE id = ?
@@ -127,13 +155,16 @@ def delete(selected_user):
         cursor.execute("""
             DELETE FROM temp_passwords
             WHERE username = ?
-        """, (selected_user.username,))
+        """, (encrypted_username,))
         conn.commit()
         return True, f"{SUCCES}Gebruiker '{selected_user.username}' succesvol verwijderd.{RESET}"
     except Exception as e:
         return False, f"{WARNING}Verwijderfout: {e}{RESET}"
     finally:
         conn.close()
+
+
+        
 
 def retrieve_users(page_number):
     conn = get_db_connection()
@@ -146,16 +177,25 @@ def retrieve_users(page_number):
 
     users = []
     for row in rows:
-        id, username, email, password, role_str = row
+        id, enc_username, enc_email, password, role_str = row
+        try:
+            username = decrypt(enc_username)
+        except Exception:
+            username = "[Fout bij decryptie username]"
+        try:
+            email = decrypt(enc_email)
+        except Exception:
+            email = "[Fout bij decryptie email]"
         role = UserRole(role_str)
         user = User(id, username, password, email, role)
         users.append(user)
-    
+
     cursor.execute("SELECT COUNT(*) FROM users")
     user_count = cursor.fetchone()[0]
 
     conn.close()
     return users, user_count
+
 
 def temp_password_add(username, password, expire_date):
     conn = get_db_connection()

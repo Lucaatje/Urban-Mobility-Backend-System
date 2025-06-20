@@ -1,7 +1,7 @@
-import sqlite3
-import json
-import os
+import sqlite3, bcrypt
 from models.models import UserRole
+import os, json
+from utils.data_encryption import encrypt
 
 CONFIG_PATH = "database/config.json"
 
@@ -91,10 +91,18 @@ def init_db():
     password = 'Admin_123?'
     role = UserRole.SUPER_ADMIN
 
+    encrypted_username = encrypt(username)
+    encrypted_email = encrypt(email)
+
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+    
+
     cursor.execute("""
         INSERT INTO users (username, email, password, role)
         VALUES (?, ?, ?, ?)
-        """, (username, email, password, role.value))
+        """, (encrypted_username, encrypted_email, hashed_password, role.value))
 
     conn.commit()
     conn.close()

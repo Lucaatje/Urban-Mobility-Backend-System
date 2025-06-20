@@ -3,6 +3,7 @@ from models.models import Traveller
 from utils.input_validation import *
 import datetime
 import os
+from utils.data_encryption import encrypt, decrypt
 
 
 def RegisterTraveller(traveller: Traveller):
@@ -11,16 +12,32 @@ def RegisterTraveller(traveller: Traveller):
 
     try:
         cursor.execute("""
-        INSERT INTO travellers (first_name, last_name, birthday, gender, street_name, house_number, zip_code, city, email_address, mobile_phone, driving_license_number)
+        INSERT INTO travellers (
+            first_name, last_name, birthday, gender,
+            street_name, house_number, zip_code, city,
+            email_address, mobile_phone, driving_license_number
+        )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (traveller.first_name, traveller.last_name, traveller.birthday, traveller.gender, traveller.street_name, traveller.house_number, traveller.zip_code, traveller.city, traveller.email_address, traveller.mobile_phone, traveller.driving_license_number))
+        """, (
+            encrypt(traveller.first_name),
+            encrypt(traveller.last_name),
+            encrypt(traveller.birthday),
+            traveller.gender,
+            encrypt(traveller.street_name),
+            encrypt(traveller.house_number),
+            encrypt(traveller.zip_code),
+            encrypt(traveller.city),
+            encrypt(traveller.email_address),
+            encrypt(traveller.mobile_phone),
+            encrypt(traveller.driving_license_number),
+        ))
         conn.commit()
-        print(
-            f"Traveller: '{traveller.first_name} {traveller.last_name}' succesvol geregistreerd.")
+        print(f"Traveller: '{traveller.first_name} {traveller.last_name}' succesvol geregistreerd.")
     except Exception as e:
         print("Registratiefout:", e)
     finally:
         conn.close()
+
 
 
 def GetTravellerById(traveller_id: int) -> Traveller:
@@ -32,10 +49,24 @@ def GetTravellerById(traveller_id: int) -> Traveller:
     conn.close()
 
     if row:
-        return Traveller(*row)
+        return Traveller(
+            traveller_id=row[0],
+            first_name=decrypt(row[1]),
+            last_name=decrypt(row[2]),
+            birthday=decrypt(row[3]),
+            gender=row[4],
+            street_name=decrypt(row[5]),
+            house_number=decrypt(row[6]),
+            zip_code=decrypt(row[7]),
+            city=decrypt(row[8]),
+            email_address=decrypt(row[9]),
+            mobile_phone=decrypt(row[10]),
+            driving_license_number=decrypt(row[11])
+        )
     else:
         print(f"Traveller with ID {traveller_id} not found.")
         return None
+
 
 
 def DeleteTravellerById(traveller_id: int) -> bool:
@@ -60,16 +91,29 @@ def UpdateTraveller(traveller: Traveller) -> bool:
         print(f"Traveller with ID {traveller.id} not found.")
         return False
 
-    # Update everything except ID
     try:
         cursor.execute("""
         UPDATE travellers
-        SET first_name = ?, last_name = ?, birthday = ?, gender = ?, street_name = ?, house_number = ?, zip_code = ?, city = ?, email_address = ?, mobile_phone = ?, driving_license_number = ?
+        SET first_name = ?, last_name = ?, birthday = ?, gender = ?, 
+            street_name = ?, house_number = ?, zip_code = ?, city = ?, 
+            email_address = ?, mobile_phone = ?, driving_license_number = ?
         WHERE id = ?
-        """, (traveller.first_name, traveller.last_name, traveller.birthday, traveller.gender, traveller.street_name, traveller.house_number, traveller.zip_code, traveller.city, traveller.email_address, traveller.mobile_phone, traveller.driving_license_number, traveller.id))
+        """, (
+            encrypt(traveller.first_name),
+            encrypt(traveller.last_name),
+            encrypt(traveller.birthday),
+            traveller.gender,
+            encrypt(traveller.street_name),
+            encrypt(traveller.house_number),
+            encrypt(traveller.zip_code),
+            encrypt(traveller.city),
+            encrypt(traveller.email_address),
+            encrypt(traveller.mobile_phone),
+            encrypt(traveller.driving_license_number),
+            traveller.id
+        ))
         conn.commit()
-        print(
-            f"Traveller: '{traveller.first_name} {traveller.last_name}' successfully updated.")
+        print(f"Traveller: '{traveller.first_name} {traveller.last_name}' successfully updated.")
         return True
     except Exception as e:
         print("Update error:", e)
@@ -253,5 +297,4 @@ def GetAllTravellersId() -> list[dict]:
     rows = cursor.fetchall()
     conn.close()
 
-    # Return a list of dicts with id and name
-    return [{"id": row[0], "name": f"{row[1]} {row[2]}"} for row in rows] if rows else []
+    return [{"id": row[0], "name": f"{decrypt(row[1])} {decrypt(row[2])}"} for row in rows] if rows else []
