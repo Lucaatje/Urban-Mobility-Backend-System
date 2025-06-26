@@ -37,8 +37,7 @@ def write_log(username, description, additional_info="", suspicious=False):
 
 def read_logs(logged_in_user):
     if logged_in_user.role not in [UserRole.SUPER_ADMIN, UserRole.SYSTEM_ADMIN]:
-        print("❌ Access denied. Only system administrators may view the logs.")
-        return
+        return "❌ Access denied. Only system administrators may view the logs."
 
     log_file = "logs/system_log.txt"
     try:
@@ -51,6 +50,7 @@ def read_logs(logged_in_user):
                 print(decrypt(line.strip()))
             except Exception:
                 print("[⚠️ Unreadable log entry]")
+        input("\nDruk op Enter om terug te keren naar het menu...")
 
     except FileNotFoundError:
-        print("📂 Log file not found.")
+        return "📂 Log file not found."

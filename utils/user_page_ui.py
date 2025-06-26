@@ -20,10 +20,8 @@ RESET = '\033[0m' # Return to normal (Always use this after coloring data)
 def print_visible_users(logged_in_user, user_list, response, page_number, user_count):
     clear_console()
 
-    decrypted_username = decrypt(logged_in_user.username)
-
     print('╔' + '═' * 120 + '╗')
-    print(f'║ {logged_in_user.role.value} - id: {logged_in_user.user_id} - username: {decrypted_username}'.ljust(61) + f'total users: {user_count} ║'.rjust(61))
+    print(f'║ {logged_in_user.role.value} - id: {logged_in_user.user_id} - username: {logged_in_user.username}'.ljust(61) + f'total users: {user_count} ║'.rjust(61))
     print('╠' + '═' * 120 + '╣')
 
     for user in user_list:
@@ -153,7 +151,7 @@ def register_user(logged_in_user):
 
     # Print user details for updating:
 
-def print_user_details(username, email, password, role, show_password, can_change_password, prompt, selected_user):
+def print_user_details(username, email, password, role, show_password, prompt, selected_user):
     clear_console()
     password = '*' * len(password) if not show_password else password
 
@@ -175,7 +173,7 @@ def print_user_details(username, email, password, role, show_password, can_chang
     print(f'{prompt}\n')
     print(f'Username: {username or username_ph} {COMMENT}- Press: U{RESET}')
     print(f'Email: {email or email_ph} {COMMENT}- Press E{RESET}')
-    if can_change_password: print(f'Password: {password or password_ph} {COMMENT}- Press: P - Toggle Password: T{RESET}')
+    print(f'Password: {password or password_ph} {COMMENT}- Press: P - Toggle Password: T{RESET}')
     print(f'User Role: {role.value} {role_comment}')
     print(f'\n{BUTTON}[UPDATE USER]{RESET} {COMMENT}Press: 1{RESET}')
     print(f'{WARNING}[DELETE USER]{RESET} {COMMENT}Press: 2{RESET}')
@@ -184,11 +182,9 @@ def print_user_details(username, email, password, role, show_password, can_chang
     # Fill in new user details for updating:
 
 def user_details_page_ui(selected_user, logged_in_user):
-    can_change_password = True
-
     if selected_user.role == UserRole.SUPER_ADMIN: return f'{WARNING}cannot update super_admin{RESET}'
-    if selected_user.user_id == logged_in_user.user_id: can_change_password = False
-    elif selected_user.role == logged_in_user.role: return f'{WARNING}cannot update another System Administrator{RESET}'
+    if selected_user.role == logged_in_user.role and selected_user.user_id != logged_in_user.user_id:
+        return f'{WARNING}cannot update another System Administrator{RESET}'
 
     username = ''
     email = ''
@@ -198,21 +194,21 @@ def user_details_page_ui(selected_user, logged_in_user):
     prompt = f"Update user account for {selected_user.role.value}."
 
     while True:
-        print_user_details(username, email, password, role, show_password, can_change_password, prompt, selected_user)
+        print_user_details(username, email, password, role, show_password, prompt, selected_user)
 
         choice = input('\nSelect an option: ').strip().lower()
 
         if choice == 'u': username = input("Change username (min 8 chars, max 10 chars): ")
         elif choice == 'e': email = input("Change email (example: username@domain.nl): ")
-        elif choice == 'p' and can_change_password:
+        elif choice == 'p':
             # CHANGE THIS SO THAT IT GENERATES A PASSWORD AUTOMATICALY!
-            password = input("Enter temporary new password (min 12 chars, max 30 chars): ")
+            password = input("Enter new password (min 12 chars, max 30 chars): ")
         elif choice == 'r' and selected_user.role == UserRole.SERVICE_ENGINEER:
             role = UserRole.SYSTEM_ADMIN if role == UserRole.SERVICE_ENGINEER else UserRole.SERVICE_ENGINEER
             # ASK TEACHER IF THIS NEEDS TO BE IN THE ASSIGNMENT!
         elif choice == 't': show_password = not show_password
         elif choice == '1':
-            valid, message = update(selected_user.user_id, username, email, password, role, selected_user)
+            valid, message = update(selected_user.user_id, username or selected_user.username, email or selected_user.email, password, role, selected_user, logged_in_user)
             if valid and role == logged_in_user.role: return f"{SUCCES}{message}{RESET}"
             elif valid: prompt = f"{SUCCES}{message}{RESET}"
             else: prompt = f"{WARNING}{message}{RESET}"
