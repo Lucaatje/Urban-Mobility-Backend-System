@@ -181,10 +181,11 @@ def delete(selected_user, executed_by):
                 record = cur_record
                 break
 
-        cursor.execute("""
-            DELETE FROM temp_passwords
-            WHERE id = ?
-        """, (record[0],))
+        if record:
+            cursor.execute("""
+                DELETE FROM temp_passwords
+                WHERE id = ?
+            """, (record[0],))
         conn.commit()
         write_log(executed_by, "User is deleted", f"User {selected_user.username} is deleted", suspicious=False)
         return True, f"{SUCCES}Gebruiker '{selected_user.username}' succesvol verwijderd.{RESET}"
@@ -422,11 +423,12 @@ def update_password(username, password):
                 record = user
                 break
 
-        cursor.execute("""
-            UPDATE users
-            SET password = ?
-            WHERE id = ?
-        """, (password_hash, record[0]))
+        if record:
+            cursor.execute("""
+                UPDATE users
+                SET password = ?
+                WHERE id = ?
+            """, (password_hash, record[0]))
 
         cursor.execute("SELECT id, username FROM temp_passwords")
         temp_passwords = cursor.fetchall()
@@ -443,10 +445,11 @@ def update_password(username, password):
                 record = cur_record
                 break
 
-        cursor.execute("""
-            DELETE FROM temp_passwords
-            WHERE id = ?
-        """, (record[0],))
+        if record:
+            cursor.execute("""
+                DELETE FROM temp_passwords
+                WHERE id = ?
+            """, (record[0],))
         conn.commit()
         return True, f"{SUCCES}Wachtwoord voor '{username}' succesvol geupdate.{RESET}"
     except Exception as e:
@@ -483,11 +486,12 @@ def update_new_password(username, password):
                 record = user
                 break
 
-        cursor.execute("""
-            UPDATE users
-            SET password = ?
-            WHERE id = ?
-        """, (password_hash, record[0]))
+        if record:
+            cursor.execute("""
+                UPDATE users
+                SET password = ?
+                WHERE id = ?
+            """, (password_hash, record[0]))
 
         cursor.execute("SELECT id, username FROM temp_passwords")
         temp_passwords = cursor.fetchall()
@@ -504,10 +508,11 @@ def update_new_password(username, password):
                 record = cur_record
                 break
 
-        cursor.execute("""
-            DELETE FROM temp_passwords
-            WHERE id = ?
-        """, (record[0],))
+        if record:
+            cursor.execute("""
+                DELETE FROM temp_passwords
+                WHERE id = ?
+            """, (record[0],))
         conn.commit()
         return True, f"{SUCCES}Wachtwoord voor '{username}' succesvol geupdate.{RESET}"
     except Exception as e:
