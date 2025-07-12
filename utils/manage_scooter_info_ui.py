@@ -24,9 +24,6 @@ def manage_scooter_information(logged_in_user):
 
     db = get_db_connection()
 
-    encrypted_username = logged_in_user.username
-    username = decrypt(encrypted_username)
-
     if choice == "1":
         if logged_in_user.role == UserRole.SERVICE_ENGINEER:
             print("❌ Je hebt geen rechten om scooters toe te voegen.")
