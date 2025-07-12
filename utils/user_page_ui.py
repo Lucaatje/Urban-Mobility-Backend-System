@@ -208,7 +208,7 @@ def user_details_page_ui(selected_user, logged_in_user):
             # ASK TEACHER IF THIS NEEDS TO BE IN THE ASSIGNMENT!
         elif choice == 't': show_password = not show_password
         elif choice == '1':
-            valid, message = update(selected_user.user_id, username or selected_user.username, email or selected_user.email, password, role, selected_user, logged_in_user)
+            valid, message = update(username, email, password, role, selected_user, logged_in_user)
             if valid and role == logged_in_user.role: return f"{SUCCES}{message}{RESET}"
             elif valid: prompt = f"{SUCCES}{message}{RESET}"
             else: prompt = f"{WARNING}{message}{RESET}"

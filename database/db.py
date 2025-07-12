@@ -27,7 +27,7 @@ def init_db():
     if os.path.exists(db_path):
         return
 
-    conn = sqlite3.connect(db_path)
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -83,6 +83,15 @@ def init_db():
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         expire_date DATETIME
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS restore_codes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        restore_code TEXT NOT NULL,
+        backup_filename TEXT NOT NULL
     )
     """)
 

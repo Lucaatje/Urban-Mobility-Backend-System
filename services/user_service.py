@@ -3,7 +3,7 @@ from utils.input_validation import username_checker, password_checker
 from models.models import User, UserRole
 from utils.commands_ui import clear_console
 from datetime import datetime, timedelta
-from utils.password_utils import hash_password
+from utils.password_utils import hash_password, verify_password
 from utils.data_encryption import encrypt, decrypt
 from logs.logger import write_log
 import bcrypt
@@ -97,19 +97,19 @@ def register(username, email, password, role, executed_by):
 
 
 
-def update(user_id, username, email, password, role, selected_user, logged_in_user):
+def update(username, email, password, role, selected_user, logged_in_user):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    if username != '':
-        valid, message = username_checker(username)
-        if not valid:
-            return valid, message
-        enc_username = encrypt(username)
-    else:
+    if username == '':
         username = selected_user.username
-        enc_username = encrypt(username)  # nodig voor storage
-
+    if email == '':
+        email = selected_user.email
+    
+    valid, message = username_checker(username)
+    if not valid:
+        return valid, message
+    # Hier zou je een email_checker() kunnen toevoegen
     if password != '':
         valid, message = password_checker(password)
         if not valid:
@@ -120,10 +120,10 @@ def update(user_id, username, email, password, role, selected_user, logged_in_us
                 return valid, message
         else:
             valid, message = update_new_password(logged_in_user.username, password)
+            if not valid:
+                return valid, message
 
-    if email == '':
-        email = selected_user.email
-    # Hier zou je een email_checker() kunnen toevoegen
+    enc_username = encrypt(username)
     enc_email = encrypt(email)
 
     try:
@@ -131,7 +131,7 @@ def update(user_id, username, email, password, role, selected_user, logged_in_us
             UPDATE users
             SET username = ?, email = ?, role = ?
             WHERE id = ?
-        """, (enc_username, enc_email, role.value, user_id))
+        """, (enc_username, enc_email, role.value, selected_user.user_id))
         conn.commit()
         write_log(username, "User is updated", f"User {selected_user.username} is updated", suspicious=False)
         return True, f"Gebruiker '{username}' succesvol geüpdatet."
@@ -159,17 +159,32 @@ def delete(selected_user, executed_by):
     cursor = conn.cursor()
 
     try:
-        encrypted_username = encrypt(selected_user.username)
+        # encrypted_username = encrypt(selected_user.username)
 
         cursor.execute("""
             DELETE FROM users
             WHERE id = ?
         """, (selected_user.user_id,))
 
+        cursor.execute("SELECT id, username FROM temp_passwords")
+        temp_passwords = cursor.fetchall()
+
+        record = None
+
+        for cur_record in temp_passwords:
+            try:
+                dec_username = decrypt(cur_record[1])
+            except Exception as e:
+                continue
+
+            if selected_user.username == dec_username:
+                record = cur_record
+                break
+
         cursor.execute("""
             DELETE FROM temp_passwords
-            WHERE username = ?
-        """, (encrypted_username,))
+            WHERE id = ?
+        """, (record[0],))
         conn.commit()
         write_log(executed_by, "User is deleted", f"User {selected_user.username} is deleted", suspicious=False)
         return True, f"{SUCCES}Gebruiker '{selected_user.username}' succesvol verwijderd.{RESET}"
@@ -304,24 +319,41 @@ def delete_restore_code(restore_code_id, backup_path, logged_in_user):
 def temp_password_add(username, password, expire_date):
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    enc_username = encrypt(username)
+    hashed_password = hash_password(password)
     
     try:
-        cursor.execute("""
-            SELECT id FROM temp_passwords WHERE username = ? AND password = ?
-        """, (encrypt(username), hash_password(password)))
-        temp_password = cursor.fetchone()
+        cursor.execute("SELECT id, username, password, expire_date FROM temp_passwords")
+        temp_passwords = cursor.fetchall()
+        record = None
 
-        if temp_password:
+        for cur_record in temp_passwords:
+            try:
+                dec_username = decrypt(cur_record[1])
+            except Exception as e:
+                continue
+
+            if dec_username == username and bcrypt.checkpw(password.encode('utf-8'), cur_record[2].encode('utf-8')):
+                record = cur_record
+                break
+
+        # cursor.execute("""
+        #     SELECT id FROM temp_passwords WHERE username = ? AND password = ?
+        # """, (enc_username, hashed_password))
+        # temp_password = cursor.fetchone()
+
+        if record:
             cursor.execute("""
                 UPDATE temp_passwords 
-                SET password = ?, expire_date = ?
+                SET username = ?, password = ?, expire_date = ?
                 WHERE id = ?
-            """, (hash_password(password), expire_date, temp_password[0]))
+            """, (enc_username, hashed_password, expire_date, record[0]))
         else:
             cursor.execute("""
                 INSERT INTO temp_passwords (username, password, expire_date)
                 VALUES (?, ?, ?)
-            """, (encrypt(username), hash(password), expire_date))
+            """, (enc_username, hashed_password, expire_date))
         conn.commit()
         return True, f"{SUCCES}Tijdelijk wachtwoord succesvol opgeslagen.{RESET}"
     except Exception as e:
@@ -334,14 +366,25 @@ def change_password(username, password):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("""
-            SELECT username, password, expire_date FROM temp_passwords WHERE username = ?
-        """, (encrypt(username),))
+        cursor.execute("SELECT username, password, expire_date FROM temp_passwords")
+        temp_passwords = cursor.fetchall()
+        conn.close()
 
-        temp_password = cursor.fetchone()
+        record = None
+        
+        for cur_record in temp_passwords:
+            try:
+                dec_username = decrypt(cur_record[0])
+            except Exception as e:
+                continue
 
-        if temp_password:
-            if datetime.strptime(temp_password[2], "%Y-%m-%d %H:%M:%S.%f") < datetime.now() or temp_password[1] != password:
+            if username == dec_username:
+                record = cur_record
+                break
+
+        if record:
+            # PASSWORD MUST BE HASHED BEFORE STATEMENT!
+            if datetime.strptime(record[2], "%Y-%m-%d %H:%M:%S.%f") < datetime.now() or not verify_password(password, record[1]):
                 return False, f"{WARNING}Gebruikersnaam en of wachtwoord verkeerd.{RESET}"
             else:
                 return True, None
@@ -349,8 +392,6 @@ def change_password(username, password):
             return False, None
     except Exception as e:
         return False, f"{WARNING}Zoekfout: {e}{RESET}"
-    finally:
-        conn.close()
 
 def update_password(username, password):
     conn = get_db_connection()
@@ -363,19 +404,49 @@ def update_password(username, password):
         return valid, message
 
     try:
-        enc_username = encrypt(username)
+        # enc_username = encrypt(username)
         password_hash = hash_password(password)
+
+        cursor.execute("SELECT id, username, email, password, role FROM users")
+        users = cursor.fetchall()
+
+        record = None
+
+        for user in users:
+            try:
+                dec_username = decrypt(user[1])
+            except Exception as e:
+                continue
+
+            if username == dec_username:
+                record = user
+                break
 
         cursor.execute("""
             UPDATE users
             SET password = ?
-            WHERE username = ?
-        """, (password_hash, enc_username))
+            WHERE id = ?
+        """, (password_hash, record[0]))
+
+        cursor.execute("SELECT id, username FROM temp_passwords")
+        temp_passwords = cursor.fetchall()
+
+        record = None
+
+        for cur_record in temp_passwords:
+            try:
+                dec_username = decrypt(cur_record[1])
+            except Exception as e:
+                continue
+
+            if username == dec_username:
+                record = cur_record
+                break
 
         cursor.execute("""
             DELETE FROM temp_passwords
-            WHERE username = ?
-        """, (enc_username,))
+            WHERE id = ?
+        """, (record[0],))
         conn.commit()
         return True, f"{SUCCES}Wachtwoord voor '{username}' succesvol geupdate.{RESET}"
     except Exception as e:
@@ -394,20 +465,49 @@ def update_new_password(username, password):
         return valid, message
 
     try:
-        enc_username = encrypt(username)
+        # enc_username = encrypt(username)
         password_hash = hash_password(password)
+
+        cursor.execute("SELECT id, username, email, password, role FROM users")
+        users = cursor.fetchall()
+
+        record = None
+
+        for user in users:
+            try:
+                dec_username = decrypt(user[1])
+            except Exception as e:
+                continue
+
+            if username == dec_username:
+                record = user
+                break
 
         cursor.execute("""
             UPDATE users
             SET password = ?
-            WHERE username = ?
-        """, (password_hash, enc_username))
-        conn.commit()
+            WHERE id = ?
+        """, (password_hash, record[0]))
+
+        cursor.execute("SELECT id, username FROM temp_passwords")
+        temp_passwords = cursor.fetchall()
+
+        record = None
+
+        for cur_record in temp_passwords:
+            try:
+                dec_username = decrypt(cur_record[1])
+            except Exception as e:
+                continue
+
+            if username == dec_username:
+                record = cur_record
+                break
 
         cursor.execute("""
             DELETE FROM temp_passwords
-            WHERE username = ?
-        """, (enc_username,))
+            WHERE id = ?
+        """, (record[0],))
         conn.commit()
         return True, f"{SUCCES}Wachtwoord voor '{username}' succesvol geupdate.{RESET}"
     except Exception as e:
