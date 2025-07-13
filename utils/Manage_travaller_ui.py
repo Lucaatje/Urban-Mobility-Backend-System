@@ -29,8 +29,8 @@ def manage_traveller_accounts(logged_in_user):
         elif choice == '2':
             print("Available Travellers:")
             # Display all traveller ID and names
-            for id in GetAllTravellersId():
-                print(f"Traveller ID: {id}")
+            for traveller in GetAllTravellersId():
+                print(f"Traveller ID: {traveller['id']}, Name: {traveller['name']}")
             traveller_id = input(
                 "Enter traveller ID to view enter 0 to cancel: ")
             if traveller_id != '0':
@@ -49,6 +49,9 @@ def manage_traveller_accounts(logged_in_user):
                     print(
                         f"Driving License Number: {traveller.driving_license_number}")
                     write_log(logged_in_user.username, "Viewed traveller", f"ID: {traveller.id}")
+                else:
+                    print("Traveller not found.")
+                    write_log(username, "View traveller failed", f"ID: {traveller_id}", suspicious=True)
             else:
                 print("Traveller not found.")
                 write_log(username, "View traveller failed", f"ID: {traveller_id}", suspicious=True)
@@ -56,8 +59,8 @@ def manage_traveller_accounts(logged_in_user):
 
         elif choice == '3':
             print("Available Travellers:")
-            for id in GetAllTravellersId():
-                print(f"Traveller ID: {id}")
+            for traveller in GetAllTravellersId():
+                print(f"Traveller ID: {traveller['id']}, Name: {traveller['name']}")
             traveller_id = input(
                 "Enter traveller ID to delete enter 0 to cancel: ")
             if traveller_id != '0':

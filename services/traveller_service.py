@@ -238,7 +238,7 @@ def Enter_city():
     city = city_dict.get(city, 'Unknown City')
     if city == 'Unknown City':
         print("Invalid city selection. Please try again.")
-        Enter_city()
+        return Enter_city()
     return city
 
 
