@@ -77,10 +77,10 @@ def manage_scooter_information(logged_in_user):
 
         if add_scooter(scooter, db):
             print("\n✅ Scooter added.")
-            write_log(username, "Added new scooter", f"Serial: {scooter.serial_number}", suspicious=False)
+            write_log(logged_in_user.username, "Added new scooter", f"Serial: {scooter.serial_number}", suspicious=False)
         else:
             print("\n❌ Failed to add scooter.")
-            write_log(username, "Failed to add scooter", str(e), suspicious=True)
+            write_log(logged_in_user.username, "Failed to add scooter", str(e), suspicious=True)
 
         input("\nPress Enter to return...")
         return
@@ -158,10 +158,10 @@ def manage_scooter_information(logged_in_user):
 
         if success:
             print("\n✅ Scooter succesvol bijgewerkt.")
-            write_log(username, f"Updated scooter field '{selected_field}'", f"Scooter ID: {scooter_id}", suspicious=False)
+            write_log(logged_in_user.username, f"Updated scooter field '{selected_field}'", f"Scooter ID: {scooter_id}", suspicious=False)
         else:
             print("\n❌ Fout bij updaten van scooter.")
-            write_log(username, f"Tried updating scooter field '{selected_field}'", f"Scooter ID: {scooter_id}", suspicious=True)
+            write_log(logged_in_user.username, f"Tried updating scooter field '{selected_field}'", f"Scooter ID: {scooter_id}", suspicious=True)
 
         input("\nPress Enter to return...")
         return
@@ -169,7 +169,7 @@ def manage_scooter_information(logged_in_user):
     elif choice == "3":
         if logged_in_user.role == UserRole.SERVICE_ENGINEER:
             print("❌ Je hebt geen rechten om scooters te verwijderen.")
-            write_log(username, f"Attempted to delete scooter with no permission", f"ID: {scooter_id}", suspicious=True)
+            write_log(logged_in_user.username, f"Attempted to delete scooter with no permission", f"ID: {scooter_id}", suspicious=True)
             input("Press Enter to return...")
             return
 
@@ -182,10 +182,10 @@ def manage_scooter_information(logged_in_user):
 
         if delete_scooter(scooter_id, db):
             print("\n✅ Scooter deleted.")
-            write_log(username, "Deleted scooter", f"ID: {scooter_id}", suspicious=False)
+            write_log(logged_in_user.username, "Deleted scooter", f"ID: {scooter_id}", suspicious=False)
         else:
             print("\n❌ Failed to delete scooter.")
-            write_log(username, f"Attempted to delete non-existent scooter", f"ID: {scooter_id}", suspicious=True)
+            write_log(logged_in_user.username, f"Attempted to delete non-existent scooter", f"ID: {scooter_id}", suspicious=True)
         input("\nPress Enter to return...")
         return
 
@@ -193,9 +193,9 @@ def manage_scooter_information(logged_in_user):
         scooters = list_all_scooters(db)
         if not scooters:
             print("⚠️  No scooters found.")
-            write_log(username, "Tried listing all scooters", "", suspicious=True)
+            write_log(logged_in_user.username, "Tried listing all scooters", "", suspicious=True)
         else:
-            write_log(username, "Listed all scooters", "", suspicious=False)
+            write_log(logged_in_user.username, "Listed all scooters", "", suspicious=False)
             print("\n📋 List of all scooters:\n")
             for scooter in scooters:
                 print(f"ID: {scooter.scooter_id}")
@@ -220,10 +220,10 @@ def manage_scooter_information(logged_in_user):
 
         if not resultaten:
             print("\n⚠️  Geen scooters gevonden met die zoekterm.")
-            write_log(username, "Tried performing scooter search", f"Search keyword: {keyword}", suspicious=True)
+            write_log(logged_in_user.username, "Tried performing scooter search", f"Search keyword: {keyword}", suspicious=True)
         else:
             print("\n📋 Zoekresultaten:\n")
-            write_log(username, "Performed scooter search", f"Search keyword: {keyword}", suspicious=False)
+            write_log(logged_in_user.username, "Performed scooter search", f"Search keyword: {keyword}", suspicious=False)
             for row in resultaten:
                 print(f"ID: {row[0]}")
                 print(f"  Brand: {row[1]}")
