@@ -176,9 +176,6 @@ def Create_traveller(existing_traveller=None):
 
 
 def Enter_city():
-    # choose city from 1 to 10
-    city = input("Please select your city by number: 1: Amsterdam, 2: Rotterdam, 3: The Hague, 4: Utrecht, 5: Eindhoven 6: Breda, 7: Groningen, 8: Leeuwarden, 9: Papendrecht, 10: Dordrecht \n")
-    # change input to city name
     city_dict = {
         '1': 'Amsterdam',
         '2': 'Rotterdam',
@@ -191,55 +188,66 @@ def Enter_city():
         '9': 'Papendrecht',
         '10': 'Dordrecht'
     }
-    city = city_dict.get(city, 'Unknown City')
-    if city == 'Unknown City':
+    while True:
+        city = input("Please select your city by number (or 'q' to cancel): ")
+        if city.lower() == 'q':
+            return None
+        city_name = city_dict.get(city)
+        if city_name:
+            return city_name
         print("Invalid city selection. Please try again.")
-        Enter_city()
-    return city
 
 
 def Enter_phonenumber():
-    PN = input("Please enter your phone number in the format +31612345678: ")
-    if Mobile_phone_checker(PN)[0]:
-        return PN
-    else:
-        print(Mobile_phone_checker(PN)[1])
-        return Enter_phonenumber()
+    while True:
+        PN = input("Please enter your phone number in the format +31612345678 (or 'q' to cancel): ")
+        if PN.lower() == 'q':
+            return None
+        valid, msg = Mobile_phone_checker(PN)
+        if valid:
+            return PN
+        print(msg)
 
 
 def Enter_drivinglicense():
-    DL = input(
-        "Please enter your driving license number: for example AB1234567 or A12345678: ")
-    if Driving_license_number_checker(DL)[0]:
-        return DL
-    else:
-        print(Driving_license_number_checker(DL)[1])
-        return Enter_drivinglicense()
+    while True:
+        DL = input("Please enter your driving license number (or 'q' to cancel): ")
+        if DL.lower() == 'q':
+            return None
+        valid, msg = Driving_license_number_checker(DL)
+        if valid:
+            return DL
+        print(msg)
 
 
 def Enter_zipcode():
-    zip_code = input("Please enter your zip code in the format 1234AB: ")
-    if ZIP_code_checker(zip_code)[0]:
-        return zip_code
-    else:
-        print(ZIP_code_checker(zip_code)[1])
-        return Enter_zipcode()
+    while True:
+        zip_code = input("Please enter your zip code in the format 1234AB (or 'q' to cancel): ")
+        if zip_code.lower() == 'q':
+            return None
+        valid, msg = ZIP_code_checker(zip_code)
+        if valid:
+            return zip_code
+        print(msg)
 
 
 def Date_verification():
-    date_str = input("Enter date in DD/MM/YYYY format: ")
-    try:
-        # Try to parse the date string
-        date = datetime.datetime.strptime(date_str, '%d/%m/%Y')
-        return date.strftime('%d/%m/%Y')  # Return in DD/MM/YYYY format
-    except ValueError:
-        print("Invalid date format. Please use DD/MM/YYYY.")
-        return Date_verification()
+    while True:
+        date_str = input("Enter date in DD/MM/YYYY format (or 'q' to cancel): ")
+        if date_str.lower() == 'q':
+            return None
+        try:
+            date = datetime.datetime.strptime(date_str, '%d/%m/%Y')
+            return date.strftime('%d/%m/%Y')
+        except ValueError:
+            print("Invalid date format. Please use DD/MM/YYYY.")
 
 
 def Gender_verification():
     while True:
-        gender = input("Enter gender (M/F): ").strip().upper()
+        gender = input("Enter gender (M/F) (or 'q' to cancel): ").strip().upper()
+        if gender.lower() == 'Q':
+            return None
         if gender in ['M', 'F']:
             return 'male' if gender == 'M' else 'female'
         print("Invalid gender. Please enter M for male or F for female.")
