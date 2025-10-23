@@ -3,7 +3,7 @@ from models.models import Traveller
 from utils.input_validation import *
 import datetime
 import os
-
+import re
 
 def RegisterTraveller(traveller: Traveller):
     conn = get_db_connection()
@@ -78,6 +78,27 @@ def UpdateTraveller(traveller: Traveller) -> bool:
         conn.close()
 
 
+# Whitelist patterns (adjust as needed)
+NAME_REGEX = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ' \-]{1,50}$")
+STREET_REGEX = re.compile(r"^[A-Za-z0-9À-ÖØ-öø-ÿ' \-]{1,80}$")
+HOUSE_REGEX = re.compile(r"^[A-Za-z0-9\/\-]{1,10}$")
+EMAIL_MAX_LEN = 254
+PHONE_MAX_LEN = 20
+DL_MAX_LEN = 20
+
+def _valid_name(value: str) -> bool:
+    return bool(value) and len(value) <= 50 and NAME_REGEX.match(value)
+
+def _valid_street(value: str) -> bool:
+    return bool(value) and len(value) <= 80 and STREET_REGEX.match(value)
+
+def _valid_house(value: str) -> bool:
+    return bool(value) and len(value) <= 10 and HOUSE_REGEX.match(value)
+
+def _valid_email(value: str) -> bool:
+    return bool(value) and len(value) <= EMAIL_MAX_LEN  # assume input_validation.email checker used elsewhere
+
+
 def Create_traveller(existing_traveller=None):
     # Use existing values if provided, otherwise None
     first_name = getattr(existing_traveller, "first_name", None)
@@ -90,89 +111,128 @@ def Create_traveller(existing_traveller=None):
     city = getattr(existing_traveller, "city", None)
     email_address = getattr(existing_traveller, "email_address", None)
     mobile_phone = getattr(existing_traveller, "mobile_phone", None)
-    driving_license_number = getattr(
-        existing_traveller, "driving_license_number", None)
+    driving_license_number = getattr(existing_traveller, "driving_license_number", None)
     traveller_id = getattr(existing_traveller, "id", None)
 
-    loop = True
-    while loop:
-        print(f"\nCurrent values:\n"
-              f"First name: {first_name if first_name else 'Not set'}\n"
-              f"Last name: {last_name if last_name else 'Not set'}\n"
-              f"Birthday: {birthday if birthday else 'Not set'}\n"
-              f"Gender: {Gender if Gender else 'Not set'}\n"
-              f"Street name: {street_name if street_name else 'Not set'}\n"
-              f"House number: {house_number if house_number else 'Not set'}\n"
-              f"Zip code: {zip_code if zip_code else 'Not set'}\n"
-              f"City: {city if city else 'Not set'}\n"
-              f"Email address: {email_address if email_address else 'Not set'}\n"
-              f"Mobile phone: {mobile_phone if mobile_phone else 'Not set'}\n"
-              f"Driving license number: {driving_license_number if driving_license_number else 'Not set'}\n"
-              )
-        match = input(
-            "Enter what you would like to fill in:\n"
-            "1: First name,\n2: Last name,\n3: Birthday,\n"
-            "4: Gender,\n5: Street name,\n6: House number,\n"
-            "7: Zip code,\n8: City,\n9: Email address,\n10: Mobile phone,\n"
-            "11: Driving license number,\n12: Continue\n13: Exit\n"
-        ).strip()
+    while True:  # outer loop: keeps returning to the form instead of recursion
+        loop = True
+        while loop:
+            print(f"\nCurrent values:\n"
+                  f"First name: {first_name if first_name else 'Not set'}\n"
+                  f"Last name: {last_name if last_name else 'Not set'}\n"
+                  f"Birthday: {birthday if birthday else 'Not set'}\n"
+                  f"Gender: {Gender if Gender else 'Not set'}\n"
+                  f"Street name: {street_name if street_name else 'Not set'}\n"
+                  f"House number: {house_number if house_number else 'Not set'}\n"
+                  f"Zip code: {zip_code if zip_code else 'Not set'}\n"
+                  f"City: {city if city else 'Not set'}\n"
+                  f"Email address: {email_address if email_address else 'Not set'}\n"
+                  f"Mobile phone: {mobile_phone if mobile_phone else 'Not set'}\n"
+                  f"Driving license number: {driving_license_number if driving_license_number else 'Not set'}\n"
+                  )
+            match = input(
+                "Enter what you would like to fill in:\n"
+                "1: First name,\n2: Last name,\n3: Birthday,\n"
+                "4: Gender,\n5: Street name,\n6: House number,\n"
+                "7: Zip code,\n8: City,\n9: Email address,\n10: Mobile phone,\n"
+                "11: Driving license number,\n12: Continue\n13: Exit\n"
+            ).strip()
 
-        if match == '1':
-            first_name = input("Enter first name: ")
-        elif match == '2':
-            last_name = input("Enter last name: ")
-        elif match == '3':
-            birthday = Date_verification()
-        elif match == '4':
-            Gender = Gender_verification()
-        elif match == '5':
-            street_name = input("Enter street name: ")
-        elif match == '6':
-            house_number = input("Enter house number: ")
-        elif match == '7':
-            zip_code = Enter_zipcode()
-        elif match == '8':
-            city = Enter_city()
-        elif match == '9':
-            email_address = input("Enter email address: ")
-        elif match == '10':
-            mobile_phone = Enter_phonenumber()
-        elif match == '11':
-            driving_license_number = Enter_drivinglicense()
-        elif match == '12':
-            print("Continuing to create/update traveller...")
-            loop = False
-            os.system('cls' if os.name == 'nt' else 'clear')  # Clear console
-        elif match == '13':
-            print("Exiting traveller creation/update.")
-            os.system('cls' if os.name == 'nt' else 'clear')  # Clear console
-            return None
-        else:
-            print("Invalid option. Please try again.")
+            if match == '1':
+                val = input("Enter first name (or 'q' to cancel): ")
+                if val.lower() == 'q': return None
+                first_name = val
+            elif match == '2':
+                val = input("Enter last name (or 'q' to cancel): ")
+                if val.lower() == 'q': return None
+                last_name = val
+            elif match == '3':
+                val = Date_verification()
+                if val is None: return None
+                birthday = val
+            elif match == '4':
+                val = Gender_verification()
+                if val is None: return None
+                Gender = val
+            elif match == '5':
+                val = input("Enter street name (or 'q' to cancel): ")
+                if val.lower() == 'q': return None
+                street_name = val
+            elif match == '6':
+                val = input("Enter house number (or 'q' to cancel): ")
+                if val.lower() == 'q': return None
+                house_number = val
+            elif match == '7':
+                val = Enter_zipcode()
+                if val is None: return None
+                zip_code = val
+            elif match == '8':
+                val = Enter_city()
+                if val is None: return None
+                city = val
+            elif match == '9':
+                val = input("Enter email address (or 'q' to cancel): ")
+                if val.lower() == 'q': return None
+                email_address = val
+            elif match == '10':
+                val = Enter_phonenumber()
+                if val is None: return None
+                mobile_phone = val
+            elif match == '11':
+                val = Enter_drivinglicense()
+                if val is None: return None
+                driving_license_number = val
+            elif match == '12':
+                print("Continuing to create/update traveller...")
+                loop = False
+                os.system('cls' if os.name == 'nt' else 'clear')  # Clear console
+            elif match == '13':
+                print("Exiting traveller creation/update.")
+                os.system('cls' if os.name == 'nt' else 'clear')  # Clear console
+                return None
+            else:
+                print("Invalid option. Please try again.")
 
-    # Check if all required fields are filled
-    required_fields = [first_name, last_name, birthday,
-                       Gender, email_address, driving_license_number]
-    if not all(required_fields):
-        print("Not all required fields are filled. Traveller not created/updated.")
-        print("Returning to creation menu.")
-        return Create_traveller(existing_traveller)
+        # Whitelist / sanity checks (deny-by-default)
+        if not _valid_name(first_name):
+            print("Invalid first name. Allowed: letters, spaces, hyphen, max 50 chars.")
+            continue  # go back to the form
+        if not _valid_name(last_name):
+            print("Invalid last name. Allowed: letters, spaces, hyphen, max 50 chars.")
+            continue
+        if not isinstance(birthday, str) or len(birthday) == 0:
+            print("Invalid birthday.")
+            continue
+        if Gender not in ('male', 'female'):
+            print("Invalid gender.")
+            continue
+        if street_name and not _valid_street(street_name):
+            print("Invalid street name.")
+            continue
+        if house_number and not _valid_house(house_number):
+            print("Invalid house number.")
+            continue
+        if email_address and len(email_address) > EMAIL_MAX_LEN:
+            print("Email too long.")
+            continue
+        # phone and driving license are validated in Enter_* helpers
 
-    traveller = Traveller(
-        traveller_id=traveller_id,  # Use existing ID if updating
-        first_name=first_name,
-        last_name=last_name,
-        birthday=birthday,
-        gender=Gender,
-        street_name=street_name,
-        house_number=house_number,
-        zip_code=zip_code,
-        city=city,
-        email_address=email_address,
-        mobile_phone=mobile_phone,
-        driving_license_number=driving_license_number
-    )
-    return traveller
+        # All checks passed: build traveller
+        traveller = Traveller(
+            traveller_id=traveller_id,  # Use existing ID if updating
+            first_name=first_name,
+            last_name=last_name,
+            birthday=birthday,
+            gender=Gender,
+            street_name=street_name,
+            house_number=house_number,
+            zip_code=zip_code,
+            city=city,
+            email_address=email_address,
+            mobile_phone=mobile_phone,
+            driving_license_number=driving_license_number
+        )
+        return traveller
 
 
 def Enter_city():
