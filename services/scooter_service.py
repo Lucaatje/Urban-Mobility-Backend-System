@@ -144,11 +144,10 @@ def create_scooter(existing_scooter=None):
             print("Invalid option. Please try again.")
             os.system('cls' if os.name == 'nt' else 'clear')
 
-    required_fields = [brand, model, serial_number, battery_capacity, state_of_charge]
-    if not all(required_fields):
-        print("Not all required fields are filled. Scooter not created/updated.")
-        print("Returning to creation menu.")
-        return create_scooter(existing_scooter)
+        required_fields = [brand, model, serial_number, battery_capacity, state_of_charge]
+        if not all(required_fields):
+            print("Not all required fields are filled. Scooter not created/updated.")
+            print("Returning to creation menu.")
 
     scooter = Scooter(
         scooter_id=scooter_id,
@@ -167,16 +166,15 @@ def create_scooter(existing_scooter=None):
     )
     return scooter
 
+def update_scooter(scooter_id, updated_scooter: Scooter, updated_field=None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-def update_scooter(scooter_id, updated_scooter: Scooter, db, username=None, updated_field=None):
     validation_error = validate_scooter_data(updated_scooter)
     if validation_error:
         print(f"❌ Validatiefout voor veld '{updated_field}': {validation_error}")
         return False
-    
-    conn = db
-    cursor = conn.cursor()
-
+ 
     try:
         query = """
             UPDATE scooters SET
@@ -240,8 +238,8 @@ def delete_scooter(scooter_id):
 
 
 
-def search_scooters(keyword, db_connection):
-    conn = db_connection
+def search_scooters(keyword):
+    conn = get_db_connection()
     cursor = conn.cursor()
     keyword = keyword.lower()
 
@@ -323,7 +321,7 @@ def list_all_scooters():
 
 
 
-def get_scooter_by_id(scooter_id, db):
+def get_scooter_by_id(scooter_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM scooters WHERE id = ?", (scooter_id,))
@@ -380,31 +378,57 @@ def get_editable_attributes_by_role(role):
         ]
 
 
+def get_all_scooters() -> list[dict]:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id, brand, model, serial_number FROM scooters")
+    rows = cursor.fetchall()
+    conn.close()
+
+    if not rows:
+        return []
+
+    scooters = []
+    for row in rows:
+        try:
+            scooter_id = row[0]
+            brand = decrypt(row[1])
+            model = decrypt(row[2])
+            serial = decrypt(row[3])
+            scooters.append({
+                "id": scooter_id,
+                "name": f"{brand} {model} ({serial})"
+            })
+        except Exception as e:
+            print(f"Error decrypting scooter data (id={row[0]}): {e}")
+            continue
+
+    return scooters
 
 def validate_scooter_data(scooter: Scooter) -> str | None:
 
     if not (10 <= len(scooter.serial_number) <= 17) or not scooter.serial_number.isalnum():
-        return "Serienummer moet 10–17 alfanumerieke tekens bevatten."
+        return "Serial number must contain 10–17 alphanumeric characters."
     
-
     if not (0 <= scooter.state_of_charge <= 100):
-        return "State of Charge (SoC) moet tussen 0 en 100% liggen."
+        return "State of Charge (SoC) must be between 0 and 100%."
 
     if not isinstance(scooter.target_soc_range, tuple) or len(scooter.target_soc_range) != 2:
-        return "Target SoC Range moet een tuple zijn van (min, max)."
+        return "Target SoC range must be a tuple of (min, max)."
 
     min_soc, max_soc = scooter.target_soc_range
     if not (0 <= min_soc < max_soc <= 100):
-        return "Target SoC Range moet geldig zijn en tussen 0 en 100% liggen."
+        return "Target SoC range must be valid and between 0 and 100%."
 
     if not (51.85 <= scooter.location_lat <= 52.00 and 4.25 <= scooter.location_long <= 4.60):
-        return "Locatie moet binnen regio Rotterdam liggen."
+        return "Location must be within the Rotterdam region."
 
     from datetime import datetime
     try:
         datetime.strptime(scooter.last_maintenance_date, "%Y-%m-%d")
     except (ValueError, TypeError):
-        return "Datum laatste onderhoud moet in formaat YYYY-MM-DD zijn."
+        return "Last maintenance date must be in the format YYYY-MM-DD."
 
     return None
 

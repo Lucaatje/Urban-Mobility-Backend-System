@@ -4,7 +4,7 @@ from models.models import Scooter, UserRole
 import os
 from logs.logger import write_log
 from services.scooter_service import get_editable_attributes_by_role
-from services.scooter_service import get_scooter_by_id, search_scooters, create_scooter
+from services.scooter_service import get_scooter_by_id, search_scooters, create_scooter, get_all_scooters
 from services.scooter_service import (
     add_scooter,
     update_scooter,
@@ -23,7 +23,6 @@ def Print_Scooter_Menu():
     print("5. Search scooters by keyword")
     print("6. Exit")
 
-
 def Print_Scooter_In_List(scooter):
     print(f"ID: {scooter.scooter_id}")
     print(f"  Brand: {scooter.brand}")
@@ -39,11 +38,9 @@ def Print_Scooter_In_List(scooter):
     print(f"  Last Maintenance Date: {scooter.last_maintenance_date}")
     print("-" * 40)
 
-
 def manage_scooter_information(logged_in_user):
 
     while True:
-
         Print_Scooter_Menu()
         choice = input("Select an option: ").strip()
 
@@ -108,141 +105,74 @@ def manage_scooter_information(logged_in_user):
                 write_log(logged_in_user.username, f"Attempted to delete non-existent scooter", f"ID: {scooter_id}", suspicious=True)
             input("\nPress Enter to return...")
             return
+        
+        if choice == "4":
+            print("Availabe Scooters:")
+            for scooter in get_all_scooters():
+                print(f"Scooter ID: {scooter['id']}, Name: {scooter['name']}")
+            
+            scooter_id_input = input("Enter Scooter ID to update or 0 to cancel: ").strip()
+            
+            if scooter_id_input == '0':
+                print("Scooter update cancelled.")
+                continue
+
+            scooters = get_all_scooters()
+            if not any(str(s.get("id")) == scooter_id_input for s in scooters):
+                print("Scooter not found.")
+                input("Press Enter to return...")
+                continue
+
+            try:
+                scooter_id = int(scooter_id_input)
+            except ValueError:
+                print("Invalid ID format. Please enter a number.")
+                write_log(logged_in_user.username, "Update scooter failed", f"Invalid ID: {scooter_id_input}", suspicious=True)
+                continue
+            
+            scooter = get_scooter_by_id(scooter_id)
+            if scooter is None:
+                print("Scooter is not found.")
+                write_log(logged_in_user.username, "Update scooter failed", f"ID not found: {scooter_id}", suspicious=True)
+                continue
+            
+            print("Update the scooter's information. Press Enter to keep existing values.")
+            updated_scooter = create_scooter(scooter)
+
+            if updated_scooter is None:
+                print("Scooter update is cancelled.")
+                continue
+            
+            updated_scooter.id = scooter_id
+            if update_scooter(scooter_id, updated_scooter):
+                print("Scooter succesfully updated.")
+                input("Press Enter to return...")
+                write_log(logged_in_user.username, "Updated scooter", f"ID: {scooter_id}")
+            else:
+                print("Traveller update failed.")
+                write_log(logged_in_user.username, "Update scooter failed", f"ID: {scooter_id}", suspicious=True)   
+
+        elif choice == "5":
+            keyword = input("Type in keyword (brand, model or serialnumber): ")
+            results = search_scooters(keyword)
+
+            if not results :
+                print("\nNo scooters found with that keyword.")
+                write_log(logged_in_user.username, "Tried performing scooter search", f"Search keyword: {keyword}", suspicious=True)
+            else:
+                print("\nSearch results: \n")
+                write_log(logged_in_user.username, "Performed scooter search", f"Search keyword: {keyword}", suspicious=False)
+                for row in results:
+                    print(f"ID: {row[0]}")
+                    print(f"  Brand: {row[1]}")
+                    print(f"  Model: {row[2]}")
+                    print(f"  Serial Number: {row[3]}")
+                    print(f"  State of Charge: {row[4]}%")
+                    print("-" * 40)
+
+            input("\nPress Enter to return...")
+            return         
 
         elif choice == "6":
             print("Exiting scooter management.")
             break
-
-    # elif choice == "2":
-    #     try:
-    #         scooter_id = int(input("Enter the ID of the scooter you want to update: "))
-    #     except ValueError:
-    #         print("❌ Invalid ID format.")
-    #         input("Press Enter to return...")
-    #         return
-
-    #     existing_scooter = get_scooter_by_id(scooter_id, db)
-    #     if not existing_scooter:
-    #         write_log(logged_in_user.username, "Attempted to update non-existent scooter", f"ID: {scooter_id}", suspicious=True)
-    #         print(f"❌ Scooter ID {scooter_id} bestaat niet.")
-    #         input("Press Enter to return...")
-    #         return
-
-    #     editable_fields = get_editable_attributes_by_role(logged_in_user.role)
-
-    #     print("\n📋 Kies welk attribuut je wilt bewerken:")
-    #     for i, attr in enumerate(editable_fields, 1):
-    #         print(f"{i}. {attr.replace('_', ' ').title()}")
-
-    #     try:
-    #         field_choice = int(input("\nNummer van veld: "))
-    #         if field_choice < 1 or field_choice > len(editable_fields):
-    #             raise ValueError
-    #     except ValueError:
-    #         print("❌ Ongeldige keuze.")
-    #         input("Press Enter to return...")
-    #         return
-
-    #     selected_field = editable_fields[field_choice - 1]
-    #     updates = {}
-
-    #     if selected_field == "target_soc":
-    #         try:
-    #             min_val = float(input("Nieuwe minimum SoC (%): "))
-    #             max_val = float(input("Nieuwe maximum SoC (%): "))
-    #             updates[selected_field] = (min_val, max_val)
-    #         except ValueError:
-    #             print("❌ Ongeldige invoer voor SoC-range.")
-    #             input("Press Enter to return...")
-    #             return
-    #     elif selected_field == "location":
-    #         lat = input("Latitude: ")
-    #         lon = input("Longitude: ")
-    #         updates[selected_field] = (lat, lon)
-    #     elif selected_field == "out_of_service":
-    #         updates[selected_field] = input("Out of service? (yes/no): ").lower() in ['yes', 'ja', 'true']
-    #     elif selected_field in ["state_of_charge", "range_km", "mileage"]:
-    #         try:
-    #             updates[selected_field] = float(input(f"Nieuwe waarde voor '{selected_field}': "))
-    #         except ValueError:
-    #             print("❌ Ongeldige numerieke invoer.")
-    #             input("Press Enter to return...")
-    #             return
-    #     else:
-    #         updates[selected_field] = input(f"Nieuwe waarde voor '{selected_field}': ")
-        
-        
-    #     if selected_field == "target_soc":
-    #         existing_scooter.target_soc_range = updates[selected_field]
-    #     elif selected_field == "location":
-    #         existing_scooter.location_lat = float(updates[selected_field][0])
-    #         existing_scooter.location_long = float(updates[selected_field][1])
-    #     else:
-    #         setattr(existing_scooter, selected_field, updates[selected_field])
-
-
-    #     # En valideer + sla op
-    #     success = update_scooter(scooter_id, existing_scooter, db, username=logged_in_user.username, updated_field=selected_field)
-
-    #     if success:
-    #         print("\n✅ Scooter succesvol bijgewerkt.")
-    #         write_log(logged_in_user.username, f"Updated scooter field '{selected_field}'", f"Scooter ID: {scooter_id}", suspicious=False)
-    #     else:
-    #         print("\n❌ Fout bij updaten van scooter.")
-    #         write_log(logged_in_user.username, f"Tried updating scooter field '{selected_field}'", f"Scooter ID: {scooter_id}", suspicious=True)
-
-    #     input("\nPress Enter to return...")
-    #     return
-    
-    # elif choice == "4":
-    #     scooters = list_all_scooters(db)
-    #     if not scooters:
-    #         print("⚠️  No scooters found.")
-    #         write_log(logged_in_user.username, "Tried listing all scooters", "", suspicious=True)
-    #     else:
-    #         write_log(logged_in_user.username, "Listed all scooters", "", suspicious=False)
-    #         print("\n📋 List of all scooters:\n")
-    #         for scooter in scooters:
-    #             print(f"ID: {scooter.scooter_id}")
-    #             print(f"  Brand: {scooter.brand}")
-    #             print(f"  Model: {scooter.model}")
-    #             print(f"  Serial Number: {scooter.serial_number}")
-    #             print(f"  Top Speed: {scooter.top_speed} km/h")
-    #             print(f"  Battery Capacity: {scooter.battery_capacity} Wh")
-    #             print(f"  State of Charge: {scooter.state_of_charge}%")
-    #             print(f"  Target SoC Range: {scooter.target_soc_range[0]}% - {scooter.target_soc_range[1]}%")
-    #             print(f"  Location: ({scooter.location_lat}, {scooter.location_long})")
-    #             print(f"  Out of Service: {'Yes' if scooter.out_of_service else 'No'}")
-    #             print(f"  Mileage: {scooter.mileage} km")
-    #             print(f"  Last Maintenance Date: {scooter.last_maintenance_date}")
-    #             print("-" * 40)
-    #     input("\nPress Enter to return...")
-    #     return
-    
-    # elif choice == "5":
-    #     keyword = input("🔍 Voer zoekterm in (merk, model of serienummer): ")
-    #     resultaten = search_scooters(keyword, db)
-
-    #     if not resultaten:
-    #         print("\n⚠️  Geen scooters gevonden met die zoekterm.")
-    #         write_log(logged_in_user.username, "Tried performing scooter search", f"Search keyword: {keyword}", suspicious=True)
-    #     else:
-    #         print("\n📋 Zoekresultaten:\n")
-    #         write_log(logged_in_user.username, "Performed scooter search", f"Search keyword: {keyword}", suspicious=False)
-    #         for row in resultaten:
-    #             print(f"ID: {row[0]}")
-    #             print(f"  Brand: {row[1]}")
-    #             print(f"  Model: {row[2]}")
-    #             print(f"  Serial Number: {row[3]}")
-    #             print(f"  State of Charge: {row[4]}%")
-    #             print("-" * 40)
-
-    #     input("\nDruk op Enter om terug te keren...")
-    #     return
-
-    # else:
-    #     print("❌ Invalid choice.")
-    #     input("Press Enter to return...")
-    #     return
-
-   
