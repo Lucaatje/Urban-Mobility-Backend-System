@@ -8,14 +8,6 @@ from utils.Manage_travaller_ui import manage_traveller_accounts
 
 def main():
     init_db()  # Initialize the database
-    dummy_user = User(
-        user_id=1,
-        username="test_superadmin",    # plain username for testing
-        password_hash="test_hash",     # not used when bypassing UI
-        email="admin@example.com",
-        role=UserRole.SUPER_ADMIN
-    )
-    manage_traveller_accounts(dummy_user)
     # while True:
     #     print("\n--- Urban Mobility App ---")
     #     print("1. Registreer")
