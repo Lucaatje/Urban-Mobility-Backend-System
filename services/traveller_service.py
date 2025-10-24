@@ -249,11 +249,15 @@ def Enter_city():
         '10': 'Dordrecht'
     }
     while True:
-        city = input("Please select your city by number (or 'q' to cancel): ")
+        print("\nSelect a city (or 'q' to cancel):")
+        for key, name in city_dict.items():
+            print(f"  {key}: {name}")
+        city = input("Please select your city by number: ").strip()
         if city.lower() == 'q':
             return None
         city_name = city_dict.get(city)
         if city_name:
+            print(f"Selected city: {city_name}")
             return city_name
         print("Invalid city selection. Please try again.")
 
@@ -271,7 +275,7 @@ def Enter_phonenumber():
 
 def Enter_drivinglicense():
     while True:
-        DL = input("Please enter your driving license number (or 'q' to cancel): ")
+        DL = input("Please enter your driving license number (or 'q' to cancel): for example AB1234567 or A12345678")
         if DL.lower() == 'q':
             return None
         valid, msg = Driving_license_number_checker(DL)

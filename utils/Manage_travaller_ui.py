@@ -23,39 +23,33 @@ def manage_traveller_accounts(logged_in_user):
 
         elif choice == '2':
             print("Available Travellers:")
-            # Display all traveller ID and names
-            for id in GetAllTravellersId():
-                print(f"Traveller ID: {id}")
-            traveller_id = input(
-                "Enter traveller ID to view enter 0 to cancel: ")
+            for t in GetAllTravellersId():
+                print(f"Traveller ID: {t['id']}, Name: {t['name']}")
+            traveller_id = input("Enter traveller ID to view or 0 to cancel: ").strip()
             if traveller_id != '0':
                 traveller = GetTravellerById(int(traveller_id))
-                # print format
                 if traveller:
                     print(f"Traveller ID: {traveller.id}")
-                    print(
-                        f"Name: {traveller.first_name} {traveller.last_name}")
+                    print(f"Name: {traveller.first_name} {traveller.last_name}")
                     print(f"Birthday: {traveller.birthday}")
                     print(f"Gender: {traveller.gender}")
-                    print(
-                        f"Address: {traveller.street_name} {traveller.house_number}, {traveller.zip_code}, {traveller.city}")
+                    print(f"Address: {traveller.street_name} {traveller.house_number}, {traveller.zip_code}, {traveller.city}")
                     print(f"Email: {traveller.email_address}")
                     print(f"Mobile Phone: {traveller.mobile_phone}")
-                    print(
-                        f"Driving License Number: {traveller.driving_license_number}")
+                    print(f"Driving License Number: {traveller.driving_license_number}")
+                else:
+                    print("Traveller not found.")
             else:
-                print("Traveller not found.")
+                print("View cancelled.")
 
         elif choice == '3':
             print("Available Travellers:")
-            for id in GetAllTravellersId():
-                print(f"Traveller ID: {id}")
-            traveller_id = input(
-                "Enter traveller ID to delete enter 0 to cancel: ")
+            for t in GetAllTravellersId():
+                print(f"Traveller ID: {t['id']}, Name: {t['name']}")
+            traveller_id = input("Enter traveller ID to delete or 0 to cancel: ").strip()
             if traveller_id != '0':
                 if DeleteTravellerById(int(traveller_id)):
-                    print(
-                        f"Traveller with ID {traveller_id} has been deleted.")
+                    print(f"Traveller with ID {traveller_id} has been deleted.")
                 else:
                     print(f"Traveller with ID {traveller_id} not found.")
             else:
@@ -63,25 +57,30 @@ def manage_traveller_accounts(logged_in_user):
 
         elif choice == '4':
             print("Available Travellers:")
-            for id in GetAllTravellersId():
-                print(f"Traveller ID: {id}")
-            traveller_id = input(
-                "Enter traveller ID to update enter 0 to cancel: ")
-            if traveller_id == '0':
-                traveller = GetTravellerById(int(traveller_id))
-                if (traveller is None):
+            for t in GetAllTravellersId():
+                print(f"Traveller ID: {t['id']}, Name: {t['name']}")
+            traveller_id = input("Enter traveller ID to update or 0 to cancel: ").strip()
+            if traveller_id != '0':
+                try:
+                    traveller = GetTravellerById(int(traveller_id))
+                except ValueError:
+                    print("Invalid ID format.")
                     continue
+
+                if traveller is None:
+                    print("Traveller not found.")
+                    continue
+
+                print("Create a new traveller to replace existing one (press 'q' in prompts to cancel).")
+                updated = Create_traveller(traveller)
+                if updated is None:
+                    print("Traveller creation/update cancelled.")
                 else:
-                    print("create a new traveller to replace existing one.")
-                    # use the create traveller function to create a new traveller
-                    traveller = Create_traveller(traveller)
-                    # if the traveller is None, it means the user cancelled the creation
-                    if traveller is None:
-                        print("Traveller creation/update cancelled.")
-                    else:
-                        UpdateTraveller(traveller)
+                    # preserve the original id if Create_traveller didn't set it
+                    updated.id = getattr(updated, 'id', getattr(traveller, 'id', None))
+                    UpdateTraveller(updated)
             else:
-                print("Traveller deletion cancelled.")
+                print("Traveller update cancelled.")
 
         elif choice == '5':
             print("Exiting traveller management.")
