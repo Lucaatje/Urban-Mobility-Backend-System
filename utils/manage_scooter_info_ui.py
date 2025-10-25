@@ -137,7 +137,7 @@ def manage_scooter_information(logged_in_user):
                 continue
             
             print("Update the scooter's information. Press Enter to keep existing values.")
-            updated_scooter = create_scooter(scooter)
+            updated_scooter = create_scooter(scooter, logged_in_user.role)
 
             if updated_scooter is None:
                 print("Scooter update is cancelled.")

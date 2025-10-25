@@ -44,7 +44,10 @@ def add_scooter(scooter: Scooter):
         return False
     
 
-def create_scooter(existing_scooter=None):
+def create_scooter(existing_scooter=None, user_role=None):
+    from models.models import UserRole  
+    editable_fields = get_editable_attributes_by_role(user_role)
+
     scooter_id = getattr(existing_scooter, "scooter_id", None)
     brand = getattr(existing_scooter, "brand", None)
     model = getattr(existing_scooter, "model", None)
@@ -75,15 +78,37 @@ def create_scooter(existing_scooter=None):
               f"Last maintenance date: {last_maintenance_date if last_maintenance_date else 'Not set'}\n"
               )
 
-        match = input(
-            "Enter what you would like to fill in:\n"
-            "1: Brand,\n2: Model,\n3: Serial number,\n"
-            "4: Top speed (km/h),\n5: Battery capacity (Wh),\n"
-            "6: State of charge (%),\n7: Target SoC range (min,max),\n"
-            "8: Latitude,\n9: Longitude,\n10: Out of service (True/False),\n"
-            "11: Mileage (km),\n12: Last maintenance date (YYYY-MM-DD),\n"
-            "13: Continue,\n14: Exit\n"
-        ).strip()
+        option_map = {
+            "1": ("brand", "Brand"),
+            "2": ("model", "Model"),
+            "3": ("serial_number", "Serial number"),
+            "4": ("top_speed", "Top speed (km/h)"),
+            "5": ("battery_capacity", "Battery capacity (Wh)"),
+            "6": ("state_of_charge", "State of charge (%)"),
+            "7": ("target_soc_range", "Target SoC range (min,max)"),
+            "8": ("location_lat", "Latitude"),
+            "9": ("location_long", "Longitude"),
+            "10": ("out_of_service", "Out of service (True/False)"),
+            "11": ("mileage", "Mileage (km)"),
+            "12": ("last_maintenance_date", "Last maintenance date (YYYY-MM-DD)")
+        }
+
+        available_options = []
+        print("Enter what you would like to fill in:")
+        for num, (attr, label) in option_map.items():
+            
+            if any(key in attr for key in editable_fields):
+                print(f"{num}: {label}")
+                available_options.append(num)
+
+        print("13: Continue")
+        print("14: Exit")
+
+        match = input("Select an option: ").strip()
+
+        if match not in available_options + ["13", "14"]:
+            print("You do not have permission to edit this field or invalid option.")
+            continue
 
         if match == '1':
             brand = get_valid_input("Enter brand: ").title()
