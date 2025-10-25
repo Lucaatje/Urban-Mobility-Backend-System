@@ -86,43 +86,43 @@ def create_scooter(existing_scooter=None):
         ).strip()
 
         if match == '1':
-            brand = input("Enter brand: ").strip().title()
+            brand = get_valid_input("Enter brand: ").title()
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '2':
-            model = input("Enter model: ").strip()
+            model = get_valid_input("Enter model: ")
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '3':
-            serial_number = input("Enter serial number (10–17 alphanumeric): ").strip().upper()
+            serial_number = get_valid_input("Enter serial number (10–17 alphanumeric): ").upper()
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '4':
-            top_speed = float(input("Enter top speed (km/h): "))
+            top_speed = get_valid_input("Enter top speed (km/h): ", float)
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '5':
-            battery_capacity = int(input("Enter battery capacity (Wh): "))
+            battery_capacity = get_valid_input("Enter battery capacity (Wh): ", int)
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '6':
-            state_of_charge = float(input("Enter state of charge (%): "))
+            state_of_charge = get_valid_input("Enter state of charge (%): ", float)
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '7':
             try:
-                min_soc = float(input("Enter min SoC (%): "))
-                max_soc = float(input("Enter max SoC (%): "))
+                min_soc = get_valid_input("Enter min SoC (%): ", float)
+                max_soc = get_valid_input("Enter max SoC (%): ", float)
                 target_soc_range = (min_soc, max_soc)
             except ValueError:
                 print("Invalid input. Please enter numeric values.")
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '8':
-            location_lat = float(input("Enter latitude: "))
+            location_lat = get_valid_input("Enter latitude: ", float)
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '9':
-            location_long = float(input("Enter longitude: "))
+            location_long = get_valid_input("Enter longitude: ", float)
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '10':
             val = input("Out of service? (y/n): ").lower()
             out_of_service = val in ("y", "yes", "true", "1")
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '11':
-            mileage = float(input("Enter mileage (km): "))
+            mileage = get_valid_input("Enter mileage (km): ", float)
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '12':
             last_maintenance_date = input("Enter last maintenance date (YYYY-MM-DD): ").strip()
@@ -133,9 +133,32 @@ def create_scooter(existing_scooter=None):
                 last_maintenance_date = None
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '13':
-            print("Continuing to create/update scooter...")
-            os.system('cls' if os.name == 'nt' else 'clear')
-            break
+            required_fields = {
+                "Brand": brand,
+                "Model": model,
+                "Serial number": serial_number,
+                "Top speed": top_speed,
+                "Battery capacity": battery_capacity,
+                "State of charge": state_of_charge,
+                "Target SoC range": target_soc_range,
+                "Latitude": location_lat,
+                "Longitude": location_long,
+                "Out of service": out_of_service,
+                "Mileage": mileage,
+                "Last maintenance date": last_maintenance_date
+            }
+
+            missing = [field for field, value in required_fields.items() if value in (None, "", [])]
+
+            if missing:
+                print("\nYou must fill in all required fields before continuing:")
+                for field in missing:
+                    print(f" - {field}")
+                input("\nPress Enter to return and complete the missing fields...")
+                continue 
+            else:
+                print("\nAll fields complete. Continuing...")
+                break
         elif match == '14':
             print("Exiting scooter creation/update.")
             os.system('cls' if os.name == 'nt' else 'clear')
@@ -406,6 +429,32 @@ def get_all_scooters() -> list[dict]:
 
     return scooters
 
+
+def get_valid_input(prompt, value_type=str, allow_empty=False):
+    while True:
+        user_input = input(prompt).strip()
+        if not user_input:
+            if allow_empty:
+                return None
+            print("This field cannot be empty.")
+            continue
+
+        if value_type == str:
+            return user_input
+        elif value_type == float:
+            try:
+                return float(user_input)
+            except ValueError:
+                print("Please enter a valid number.")
+        elif value_type == int:
+            try:
+                return int(user_input)
+            except ValueError:
+                print("Please enter a valid integer.")
+        else:
+            return user_input
+
+
 def validate_scooter_data(scooter: Scooter) -> str | None:
 
     if not (10 <= len(scooter.serial_number) <= 17) or not scooter.serial_number.isalnum():
@@ -431,6 +480,3 @@ def validate_scooter_data(scooter: Scooter) -> str | None:
         return "Last maintenance date must be in the format YYYY-MM-DD."
 
     return None
-
-
-
