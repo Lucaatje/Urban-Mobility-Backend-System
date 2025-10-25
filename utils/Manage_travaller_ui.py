@@ -22,7 +22,8 @@ def manage_traveller_accounts(logged_in_user):
             if traveller is None:
                 print("Traveller creation cancelled.")
                 continue
-            RegisterTraveller(traveller)
+            else:
+                RegisterTraveller(traveller)
 
         elif choice == '2':
             print("Available Travellers:")

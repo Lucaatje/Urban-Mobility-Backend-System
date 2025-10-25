@@ -160,7 +160,39 @@ def Create_traveller(existing_traveller=None):
             if val is not None:
                 driving_license_number = val
         elif match == '12':
-            print("Continuing to create/update traveller...")
+            # Check if all required values are filled in
+            missing_fields = []
+            if not first_name:
+                missing_fields.append("First name")
+            if not last_name:
+                missing_fields.append("Last name")
+            if not birthday:
+                missing_fields.append("Birthday")
+            if not Gender:
+                missing_fields.append("Gender")
+            if not street_name:
+                missing_fields.append("Street name")
+            if not house_number:
+                missing_fields.append("House number")
+            if not zip_code:
+                missing_fields.append("Zip code")
+            if not city:
+                missing_fields.append("City")
+            if not email_address:
+                missing_fields.append("Email address")
+            if not mobile_phone:
+                missing_fields.append("Mobile phone")
+            if not driving_license_number:
+                missing_fields.append("Driving license number")
+
+            if missing_fields:
+                print("\nThe following fields are required but not filled in:")
+                for field in missing_fields:
+                    print(f"- {field}")
+                print("\nPlease fill in all required fields before continuing.")
+                continue
+            
+            print("All required fields are filled in. Continuing to create/update traveller...")
             os.system('cls' if os.name == 'nt' else 'clear')  # Clear console
             # All checks passed: build traveller
             traveller = Traveller(
