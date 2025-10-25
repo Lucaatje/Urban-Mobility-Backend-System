@@ -19,6 +19,9 @@ def manage_traveller_accounts(logged_in_user):
 
         if choice == '1':
             traveller = Create_traveller()
+            if traveller is None:
+                print("Traveller creation cancelled.")
+                continue
             RegisterTraveller(traveller)
 
         elif choice == '2':
