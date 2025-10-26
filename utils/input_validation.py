@@ -13,46 +13,82 @@ def is_username_unique(username):
 
 
 def username_checker(username):
-    if not (8 <= len(username) <= 10):
-        return False, "Username moet tussen 8 en 10 karakters lang zijn."
+    # if not (8 <= len(username) <= 10):
+    #     return False, "Username moet tussen 8 en 10 karakters lang zijn."
 
-    # Start met letter of underscore
-    if not re.match(r'^[A-Za-z_]', username):
-        return False, "Username moet beginnen met een letter of underscore (_)."
+    # # Start met letter of underscore
+    # if not re.match(r'^[A-Za-z_]', username):
+    #     return False, "Username moet beginnen met een letter of underscore (_)."
 
-    # Toegestane karakters: letters, cijfers, underscore, apostrof, punt
-    if not re.match(r"^[A-Za-z0-9_.'']+$", username):
-        return False, "Username mag alleen letters, cijfers, _, ', en . bevatten."
+    # # Toegestane karakters: letters, cijfers, underscore, apostrof, punt
+    # if not re.match(r"^[A-Za-z0-9_.'']+$", username):
+    #     return False, "Username mag alleen letters, cijfers, _, ', en . bevatten."
 
-    # Check uniciteit (case-insensitive)
-    if not is_username_unique(username):
-        return False, "Username bestaat al."
+    # # Check uniciteit (case-insensitive)
+    # if not is_username_unique(username):
+    #     return False, "Username bestaat al."
 
-    return True, "Username is geldig."
+    # return True, "Username is geldig."
+    check_1 = (8 <= len(username) <= 10)
+    check_2 = re.match(r'^[A-Za-z_]', username)
+    check_3 = re.match(r"^[A-Za-z0-9_.'']+$", username)
+    check_4 = is_username_unique(username)
+
+    # generate response message based on first expression that returns False.
+    response_message = ""
+    if not check_1: response_message = "Username moet tussen 8 en 10 karakters lang zijn."
+    elif not check_2: response_message = "Username moet beginnen met een letter of underscore (_)."
+    elif not check_3: response_message = "Username mag alleen letters, cijfers, _, ', en . bevatten."
+    elif not check_4: response_message = "Username bestaat al."
+    else: response_message = "Username is geldig."
+    
+    if check_1 and check_2 and check_3 and check_4:
+        return True, response_message
+    else:
+        return False, response_message
 
 
 def password_checker(password):
-    # Lengte check
-    if not (12 <= len(password) <= 30):
-        return False, "Wachtwoord moet tussen 12 en 30 karakters lang zijn."
+    # # Lengte check
+    # if not (12 <= len(password) <= 30):
+    #     return False, "Wachtwoord moet tussen 12 en 30 karakters lang zijn."
 
-    # Minimaal één kleine letter
-    if not re.search(r'[a-z]', password):
-        return False, "Wachtwoord moet minimaal één kleine letter bevatten."
+    # # Minimaal één kleine letter
+    # if not re.search(r'[a-z]', password):
+    #     return False, "Wachtwoord moet minimaal één kleine letter bevatten."
 
-    # Minimaal één hoofdletter
-    if not re.search(r'[A-Z]', password):
-        return False, "Wachtwoord moet minimaal één hoofdletter bevatten."
+    # # Minimaal één hoofdletter
+    # if not re.search(r'[A-Z]', password):
+    #     return False, "Wachtwoord moet minimaal één hoofdletter bevatten."
 
-    # Minimaal één cijfer
-    if not re.search(r'\d', password):
-        return False, "Wachtwoord moet minimaal één cijfer bevatten."
+    # # Minimaal één cijfer
+    # if not re.search(r'\d', password):
+    #     return False, "Wachtwoord moet minimaal één cijfer bevatten."
 
-    # Minimaal één speciaal teken (zoals aangegeven)
-    if not re.search(r'[~!@#$%&_\-\+=`|\\()\{\}\[\]:;\'<>,\.?\/]', password):
-        return False, "Wachtwoord moet minimaal één speciaal teken bevatten."
+    # # Minimaal één speciaal teken (zoals aangegeven)
+    # if not re.search(r'[~!@#$%&_\-\+=`|\\()\{\}\[\]:;\'<>,\.?\/]', password):
+    #     return False, "Wachtwoord moet minimaal één speciaal teken bevatten."
 
-    return True, "Wachtwoord is geldig."
+    # return True, "Wachtwoord is geldig."
+    check_1 = (12 <= len(password) <= 30)
+    check_2 = re.search(r'[a-z]', password)
+    check_3 = re.search(r'[A-Z]', password)
+    check_4 = re.search(r'\d', password)
+    check_5 = re.search(r'[~!@#$%&_\-\+=`|\\()\{\}\[\]:;\'<>,\.?\/]', password)
+    
+    # generate response message based on first expression that returns False.
+    response_message = ""
+    if not check_1: response_message = "Wachtwoord moet tussen 12 en 30 karakters lang zijn."
+    elif not check_2: response_message = "Wachtwoord moet minimaal één kleine letter bevatten."
+    elif not check_3: response_message = "Wachtwoord moet minimaal één hoofdletter bevatten."
+    elif not check_4: response_message = "Wachtwoord moet minimaal één cijfer bevatten."
+    elif not check_5: response_message = "Wachtwoord moet minimaal één speciaal teken bevatten."
+    else: response_message = "Wachtwoord is geldig."
+    
+    if check_1 and check_2 and check_3 and check_4 and check_5:
+        return True, response_message
+    else:
+        return False, response_message
 
 
 def ZIP_code_checker(zip_code):
