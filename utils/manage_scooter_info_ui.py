@@ -142,15 +142,18 @@ def manage_scooter_information(logged_in_user):
             if updated_scooter is None:
                 print("Scooter update is cancelled.")
                 continue
-            
+
             updated_scooter.id = scooter_id
-            if update_scooter(scooter_id, updated_scooter):
-                print("Scooter succesfully updated.")
+            success, message = update_scooter(scooter_id, updated_scooter)
+
+            if success:
+                print(message)
                 input("Press Enter to return...")
                 write_log(logged_in_user.username, "Updated scooter", f"ID: {scooter_id}")
             else:
-                print("Traveller update failed.")
-                write_log(logged_in_user.username, "Update scooter failed", f"ID: {scooter_id}", suspicious=True)   
+                print(message)
+                write_log(logged_in_user.username, "Update scooter failed", f"ID: {scooter_id}", suspicious=True)
+                input("Press Enter to return...")
 
         elif choice == "5":
             keyword = input("Type in keyword (brand, model or serialnumber): ")

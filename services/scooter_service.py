@@ -4,15 +4,17 @@ from utils.data_encryption import encrypt, decrypt
 from datetime import datetime
 import os
 from database.db import get_db_connection
+import re
 
 def add_scooter(scooter: Scooter):
     
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    validation_error = validate_scooter_data(scooter)
-    if validation_error:
-        return [False, validation_error]
+    is_valid, message = validate_scooter_data(scooter)
+
+    if not is_valid:
+        return [False, message]
 
     try:
         cursor.execute("""
@@ -151,11 +153,6 @@ def create_scooter(existing_scooter=None, user_role=None):
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '12':
             last_maintenance_date = input("Enter last maintenance date (YYYY-MM-DD): ").strip()
-            try:
-                datetime.strptime(last_maintenance_date, "%Y-%m-%d")
-            except ValueError:
-                print("Invalid date format.")
-                last_maintenance_date = None
             os.system('cls' if os.name == 'nt' else 'clear')
         elif match == '13':
             required_fields = {
@@ -218,10 +215,10 @@ def update_scooter(scooter_id, updated_scooter: Scooter, updated_field=None):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    validation_error = validate_scooter_data(updated_scooter)
-    if validation_error:
-        print(f"❌ Validatiefout voor veld '{updated_field}': {validation_error}")
-        return False
+    is_valid, message = validate_scooter_data(updated_scooter)
+
+    if not is_valid:
+        return [False, message]
  
     try:
         query = """
@@ -258,7 +255,7 @@ def update_scooter(scooter_id, updated_scooter: Scooter, updated_field=None):
             scooter_id
         ))
         conn.commit()
-        return True
+        return [True, "Scooter successfully updated."]
 
     except Exception as e:
         print(f"❌ Databasefout tijdens update van veld '{updated_field}': {e}")
@@ -480,28 +477,49 @@ def get_valid_input(prompt, value_type=str, allow_empty=False):
             return user_input
 
 
-def validate_scooter_data(scooter: Scooter) -> str | None:
+def validate_scooter_data(scooter: Scooter) -> tuple[bool, str]:
+    check_1 = (10 <= len(scooter.serial_number) <= 17)
+    check_2 = re.fullmatch(r"[A-Za-z0-9]+", scooter.serial_number or "") is not None
 
-    if not (10 <= len(scooter.serial_number) <= 17) or not scooter.serial_number.isalnum():
-        return "Serial number must contain 10–17 alphanumeric characters."
-    
-    if not (0 <= scooter.state_of_charge <= 100):
-        return "State of Charge (SoC) must be between 0 and 100%."
+    check_3 = isinstance(scooter.state_of_charge, (int, float))
+    check_4 = (0 <= scooter.state_of_charge <= 100)
 
-    if not isinstance(scooter.target_soc_range, tuple) or len(scooter.target_soc_range) != 2:
-        return "Target SoC range must be a tuple of (min, max)."
+    check_5 = isinstance(scooter.target_soc_range, tuple)
+    check_6 = len(scooter.target_soc_range) == 2 if check_5 else False
 
-    min_soc, max_soc = scooter.target_soc_range
-    if not (0 <= min_soc < max_soc <= 100):
-        return "Target SoC range must be valid and between 0 and 100%."
+    min_soc, max_soc = scooter.target_soc_range if check_6 else (None, None)
+    check_7 = (0 <= min_soc < max_soc <= 100) if check_6 else False
 
-    if not (51.85 <= scooter.location_lat <= 52.00 and 4.25 <= scooter.location_long <= 4.60):
-        return "Location must be within the Rotterdam region."
+    check_8 = (51.85 <= scooter.location_lat <= 52.00)
+    check_9 = (4.25 <= scooter.location_long <= 4.60)
 
-    from datetime import datetime
     try:
         datetime.strptime(scooter.last_maintenance_date, "%Y-%m-%d")
+        check_10 = True
     except (ValueError, TypeError):
-        return "Last maintenance date must be in the format YYYY-MM-DD."
+        check_10 = False
 
-    return None
+    response_message = ""
+    if not check_1:
+        response_message = "Serial number must contain 10–17 characters."
+    elif not check_2:
+        response_message = "Serial number may only contain letters and numbers."
+    elif not check_3:
+        response_message = "State of Charge (SoC) must be a number."
+    elif not check_4:
+        response_message = "State of Charge (SoC) must be between 0 and 100%."
+    elif not (check_5 and check_6):
+        response_message = "Target SoC range must be a tuple of (min, max)."
+    elif not check_7:
+        response_message = "Target SoC range must be valid and between 0 and 100%."
+    elif not (check_8 and check_9):
+        response_message = "Location must be within the Rotterdam region."
+    elif not check_10:
+        response_message = "Last maintenance date must be in the format YYYY-MM-DD."
+    else:
+        response_message = "Scooter data is valid."
+
+    if all([check_1, check_2, check_3, check_4, check_5, check_6, check_7, check_8, check_9, check_10]):
+        return True, response_message
+    else:
+        return False, response_message
